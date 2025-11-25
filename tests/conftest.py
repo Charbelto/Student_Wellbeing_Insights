@@ -5,6 +5,7 @@ from app.services.attendance_service import AttendanceService
 from app.services.submission_service import SubmissionService
 from app.services.wellbeing_service import WellbeingService
 from app.services.analytics_service import AnalyticsService
+from app.services.student_service import StudentService
 from app import create_app
 
 TEST_DB = 'test_wellbeing_conftest.db'
@@ -27,6 +28,10 @@ def db_setup():
         os.remove(TEST_DB)
 
 @pytest.fixture
+def student_service(db_setup):
+    return StudentService(db_name=db_setup)
+
+@pytest.fixture
 def attendance_service(db_setup):
     return AttendanceService(db_name=db_setup)
 
@@ -43,12 +48,13 @@ def analytics_service(attendance_service, wellbeing_service, submission_service)
     return AnalyticsService(attendance_service, wellbeing_service, submission_service)
 
 @pytest.fixture
-def app(attendance_service, wellbeing_service, submission_service, analytics_service):
+def app(student_service, attendance_service, wellbeing_service, submission_service, analytics_service):
     app = create_app()
     app.config.update({
         "TESTING": True,
     })
     # Inject test services using the test DB
+    app.student_service = student_service
     app.attendance_service = attendance_service
     app.wellbeing_service = wellbeing_service
     app.submission_service = submission_service
