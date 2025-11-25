@@ -27,3 +27,17 @@ class AttendanceService:
         
         present_count = sum(1 for r in records if r.status == "Present")
         return (present_count / len(records)) * 100
+
+    def update_attendance(self, attendance_id: int, status: str) -> Attendance:
+        for record in self._storage:
+            if record.id == attendance_id:
+                record.status = status
+                return record
+        raise ValueError(f"Attendance record with id {attendance_id} not found")
+
+    def delete_attendance(self, attendance_id: int) -> bool:
+        for i, record in enumerate(self._storage):
+            if record.id == attendance_id:
+                self._storage.pop(i)
+                return True
+        raise ValueError(f"Attendance record with id {attendance_id} not found")
