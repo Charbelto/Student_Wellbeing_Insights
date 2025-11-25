@@ -63,10 +63,14 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ record.date }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ record.course_id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            {% if record.status == 'Present' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                            {{ record.status }}
-                        </span>
+                        <form action="/attendance/update/{{ record.id }}?student_id={{ student.id }}" method="POST" class="flex items-center gap-2">
+                            <select name="status" onchange="this.form.submit()" class="text-xs rounded-full px-2 py-1 border 
+                                {% if record.status == 'Present' %}bg-green-100 text-green-800 border-green-200{% else %}bg-red-100 text-red-800 border-red-200{% endif %}">
+                                <option value="Present" {% if record.status == 'Present' %}selected{% endif %}>Present</option>
+                                <option value="Absent" {% if record.status == 'Absent' %}selected{% endif %}>Absent</option>
+                                <option value="Late" {% if record.status == 'Late' %}selected{% endif %}>Late</option>
+                            </select>
+                        </form>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <form action="/attendance/delete/{{ record.id }}?student_id={{ student.id }}" method="POST" onsubmit="return confirm('Are you sure?');">
@@ -84,4 +88,3 @@
     </div>
 </div>
 {% endblock %}
-

@@ -52,6 +52,13 @@ def add_attendance():
     current_app.attendance_service.record_attendance(student_id, course_id, status, d)
     return redirect(url_for('main.attendance_list', student_id=student_id))
 
+@main_bp.route('/attendance/update/<int:record_id>', methods=['POST'])
+def update_attendance(record_id):
+    student_id = request.args.get('student_id', type=int)
+    status = request.form.get('status')
+    current_app.attendance_service.update_attendance(record_id, status)
+    return redirect(url_for('main.attendance_list', student_id=student_id))
+
 @main_bp.route('/attendance/delete/<int:record_id>', methods=['POST'])
 def delete_attendance(record_id):
     student_id = request.args.get('student_id', type=int)
