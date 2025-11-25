@@ -1,44 +1,80 @@
 from typing import List, Dict, Any
+from app.database.connection import get_db_connection
 from app.services.attendance_service import AttendanceService
 from app.services.wellbeing_service import WellbeingService
 from app.services.submission_service import SubmissionService
-from app.database.models import StressLevel
 
 class AnalyticsService:
-    def __init__(self, attendance_service: AttendanceService, wellbeing_service: WellbeingService, submission_service: SubmissionService):
+    def __init__(self, attendance_service: AttendanceService, wellbeing_service: WellbeingService, submission_service: SubmissionService, db_name='wellbeing.db'):
         self.attendance_service = attendance_service
         self.wellbeing_service = wellbeing_service
         self.submission_service = submission_service
+        self.db_name = db_name
 
     def get_student_wellbeing_summary(self, student_id: int) -> Dict[str, Any]:
-        attendance_avg = self.attendance_service.calculate_average_attendance(student_id)
+        # Using SQL aggregation for efficient analytics
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
         
-        # Get wellbeing history
-        history = self.wellbeing_service.get_student_history(student_id)
-        avg_stress = 0
-        avg_sleep = 0
-        if history:
-            avg_stress = sum(h.stress_level.value for h in history) / len(history)
-            avg_sleep = sum(h.hours_slept for h in history) / len(history)
+        # Average Attendance
+        # We can still use the service logic or optimize here. 
+        # Service logic calculates based on fetched list, which is OK for small datasets.
+        # Let's optimize with SQL for robustness.
+        cursor.execute("""
+            SELECT 
+                (CAST(SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)) * 100 as attendance_pct
+            FROM attendance 
+            WHERE student_id = ?
+        """, (student_id,))
+        att_row = cursor.fetchone()
+        attendance_pct = att_row['attendance_pct'] if att_row and att_row['attendance_pct'] is not None else 0.0
+        
+        # Wellbeing Averages
+        cursor.execute("""
+            SELECT 
+                AVG(stress_level) as avg_stress,
+                AVG(hours_slept) as avg_sleep
+            FROM wellbeing_surveys
+            WHERE student_id = ?
+        """, (student_id,))
+        wb_row = cursor.fetchone()
+        avg_stress = wb_row['avg_stress'] if wb_row and wb_row['avg_stress'] is not None else 0.0
+        avg_sleep = wb_row['avg_sleep'] if wb_row and wb_row['avg_sleep'] is not None else 0.0
+        
+        conn.close()
             
         return {
             "student_id": student_id,
-            "average_attendance_pct": attendance_avg,
+            "average_attendance_pct": attendance_pct,
             "average_stress_level": avg_stress,
             "average_hours_slept": avg_sleep
         }
 
     def identify_high_stress_weeks(self, threshold: int = 4) -> List[Dict[str, Any]]:
-        # Updated to use public method
-        high_stress_reports = []
-        surveys = self.wellbeing_service.get_all_surveys()
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
         
-        for survey in surveys:
-            if survey.stress_level.value >= threshold:
-                high_stress_reports.append({
-                    "student_id": survey.student_id,
-                    "date": survey.date,
-                    "stress_level": survey.stress_level,
-                    "comments": survey.comments
-                })
-        return high_stress_reports
+        # Complex query to find students with high stress
+        cursor.execute("""
+            SELECT 
+                ws.student_id, 
+                s.name as student_name,
+                ws.date, 
+                ws.stress_level, 
+                ws.comments
+            FROM wellbeing_surveys ws
+            JOIN students s ON ws.student_id = s.id
+            WHERE ws.stress_level >= ?
+            ORDER BY ws.date DESC
+        """, (threshold,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [{
+            "student_id": row['student_id'],
+            "student_name": row['student_name'],
+            "date": row['date'],
+            "stress_level": row['stress_level'],
+            "comments": row['comments']
+        } for row in rows]

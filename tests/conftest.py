@@ -44,8 +44,8 @@ def wellbeing_service(db_setup):
     return WellbeingService(db_name=db_setup)
 
 @pytest.fixture
-def analytics_service(attendance_service, wellbeing_service, submission_service):
-    return AnalyticsService(attendance_service, wellbeing_service, submission_service)
+def analytics_service(attendance_service, wellbeing_service, submission_service, db_setup):
+    return AnalyticsService(attendance_service, wellbeing_service, submission_service, db_name=db_setup)
 
 @pytest.fixture
 def app(student_service, attendance_service, wellbeing_service, submission_service, analytics_service):
