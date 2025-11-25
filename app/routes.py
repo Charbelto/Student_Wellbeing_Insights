@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash
-from datetime import date
+from datetime import date, datetime
 
 main_bp = Blueprint('main', __name__)
 
@@ -57,6 +57,45 @@ def delete_attendance(record_id):
     student_id = request.args.get('student_id', type=int)
     current_app.attendance_service.delete_attendance(record_id)
     return redirect(url_for('main.attendance_list', student_id=student_id))
+
+# --- SUBMISSION ROUTES ---
+
+@main_bp.route('/submissions/<int:student_id>')
+def submission_list(student_id):
+    student = current_app.student_service.get_student(student_id)
+    if not student:
+        return "Student not found", 404
+    
+    submissions = current_app.submission_service.get_student_submissions(student_id)
+    return render_template('submissions.html', student=student, submissions=submissions)
+
+@main_bp.route('/submissions/add', methods=['POST'])
+def add_submission():
+    student_id = request.form.get('student_id', type=int)
+    assignment_id = request.form.get('assignment_id')
+    date_str = request.form.get('submission_date')
+    
+    if date_str:
+        d = datetime.fromisoformat(date_str)
+    else:
+        d = datetime.now()
+    
+    current_app.submission_service.submit_assignment(student_id, assignment_id, d)
+    return redirect(url_for('main.submission_list', student_id=student_id))
+
+@main_bp.route('/submissions/grade/<int:submission_id>', methods=['POST'])
+def grade_submission(submission_id):
+    student_id = request.args.get('student_id', type=int)
+    grade = request.form.get('grade', type=float)
+    
+    current_app.submission_service.grade_submission(submission_id, grade)
+    return redirect(url_for('main.submission_list', student_id=student_id))
+
+@main_bp.route('/submissions/delete/<int:submission_id>', methods=['POST'])
+def delete_submission(submission_id):
+    student_id = request.args.get('student_id', type=int)
+    current_app.submission_service.delete_submission(submission_id)
+    return redirect(url_for('main.submission_list', student_id=student_id))
 
 # --- DASHBOARD ROUTES ---
 
