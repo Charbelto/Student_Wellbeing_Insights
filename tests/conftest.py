@@ -6,6 +6,8 @@ from app.services.submission_service import SubmissionService
 from app.services.wellbeing_service import WellbeingService
 from app.services.analytics_service import AnalyticsService
 from app.services.student_service import StudentService
+from app.services.user_service import UserService
+from app.database.models import Role
 from app import create_app
 
 TEST_DB = 'test_wellbeing_conftest.db'
@@ -44,14 +46,20 @@ def wellbeing_service(db_setup):
     return WellbeingService(db_name=db_setup)
 
 @pytest.fixture
+def user_service(db_setup):
+    return UserService(db_name=db_setup)
+
+@pytest.fixture
 def analytics_service(attendance_service, wellbeing_service, submission_service, db_setup):
     return AnalyticsService(attendance_service, wellbeing_service, submission_service, db_name=db_setup)
 
 @pytest.fixture
-def app(student_service, attendance_service, wellbeing_service, submission_service, analytics_service):
+def app(student_service, attendance_service, wellbeing_service, submission_service, analytics_service, user_service):
     app = create_app()
     app.config.update({
         "TESTING": True,
+        "SECRET_KEY": "dev",
+        "WTF_CSRF_ENABLED": False # Disable CSRF for tests
     })
     # Inject test services using the test DB
     app.student_service = student_service
@@ -59,9 +67,20 @@ def app(student_service, attendance_service, wellbeing_service, submission_servi
     app.wellbeing_service = wellbeing_service
     app.submission_service = submission_service
     app.analytics_service = analytics_service
+    app.user_service = user_service
     
     return app
 
 @pytest.fixture
 def client(app):
     return app.test_client()
+
+@pytest.fixture
+def auth_client(client, user_service):
+    # Create a user and login
+    user_service.create_user("test_admin", "pass", Role.WELLBEING_OFFICER)
+    with client.session_transaction() as sess:
+        # Flask-Login session management simulation or just use post login
+        pass
+    client.post('/login', data={'username': 'test_admin', 'password': 'pass'}, follow_redirects=True)
+    return client

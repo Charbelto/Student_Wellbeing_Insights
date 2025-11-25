@@ -10,10 +10,20 @@
     <nav class="bg-blue-600 text-white p-4 shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
             <a href="/" class="text-xl font-bold">WellbeingSys</a>
-            <div class="space-x-4">
-                <a href="/" class="hover:text-blue-200">Home</a>
-                <a href="/students" class="hover:text-blue-200">Students</a>
-                <a href="/dashboard" class="hover:text-blue-200">Dashboard</a>
+            
+            <div class="space-x-4 flex items-center">
+                {% if current_user.is_authenticated %}
+                    <a href="/" class="hover:text-blue-200">Home</a>
+                    <a href="/students" class="hover:text-blue-200">Students</a>
+                    <a href="/dashboard" class="hover:text-blue-200">Dashboard</a>
+                    
+                    <span class="text-sm bg-blue-700 px-2 py-1 rounded">
+                        {{ current_user.username }} ({{ current_user.role.value }})
+                    </span>
+                    <a href="/logout" class="text-sm border border-white px-2 py-1 rounded hover:bg-white hover:text-blue-600 transition">Logout</a>
+                {% else %}
+                    <a href="/login" class="hover:text-blue-200">Login</a>
+                {% endif %}
             </div>
         </div>
     </nav>
