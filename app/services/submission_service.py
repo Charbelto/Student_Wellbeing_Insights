@@ -25,3 +25,10 @@ class SubmissionService:
 
     def get_student_submissions(self, student_id: int) -> List[Submission]:
         return [s for s in self._storage if s.student_id == student_id]
+
+    def delete_submission(self, submission_id: int) -> bool:
+        for i, submission in enumerate(self._storage):
+            if submission.id == submission_id:
+                self._storage.pop(i)
+                return True
+        raise ValueError(f"Submission with id {submission_id} not found")

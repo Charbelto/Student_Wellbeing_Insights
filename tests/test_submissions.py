@@ -27,3 +27,14 @@ def test_get_student_submissions(submission_service):
     submissions = submission_service.get_student_submissions(1)
     assert len(submissions) == 2
 
+def test_delete_submission(submission_service):
+    submission = submission_service.submit_assignment(1, "A1", datetime.now())
+    
+    success = submission_service.delete_submission(submission.id)
+    
+    assert success is True
+    assert len(submission_service.get_student_submissions(1)) == 0
+
+def test_delete_submission_not_found(submission_service):
+    with pytest.raises(ValueError):
+        submission_service.delete_submission(999)
