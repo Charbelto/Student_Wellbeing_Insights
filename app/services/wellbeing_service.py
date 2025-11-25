@@ -30,3 +30,10 @@ class WellbeingService:
 
     def get_student_history(self, student_id: int) -> List[WellbeingSurvey]:
         return [s for s in self._storage if s.student_id == student_id]
+
+    def delete_survey(self, survey_id: int) -> bool:
+        for i, survey in enumerate(self._storage):
+            if survey.id == survey_id:
+                self._storage.pop(i)
+                return True
+        raise ValueError(f"Survey with id {survey_id} not found")
