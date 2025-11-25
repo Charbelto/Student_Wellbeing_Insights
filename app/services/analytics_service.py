@@ -17,9 +17,6 @@ class AnalyticsService:
         cursor = conn.cursor()
         
         # Average Attendance
-        # We can still use the service logic or optimize here. 
-        # Service logic calculates based on fetched list, which is OK for small datasets.
-        # Let's optimize with SQL for robustness.
         cursor.execute("""
             SELECT 
                 (CAST(SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)) * 100 as attendance_pct
@@ -48,6 +45,31 @@ class AnalyticsService:
             "average_attendance_pct": attendance_pct,
             "average_stress_level": avg_stress,
             "average_hours_slept": avg_sleep
+        }
+
+    def get_student_wellbeing_history(self, student_id: int, limit: int = 30) -> Dict[str, List[Any]]:
+        """
+        Fetches historical wellbeing data for charts (last N records).
+        Returns a dictionary with lists for dates, stress_levels, and hours_slept.
+        """
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT date, stress_level, hours_slept
+            FROM wellbeing_surveys
+            WHERE student_id = ?
+            ORDER BY date ASC
+            LIMIT ?
+        """, (student_id, limit))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return {
+            "dates": [row['date'] for row in rows],
+            "stress_levels": [row['stress_level'] for row in rows],
+            "hours_slept": [row['hours_slept'] for row in rows]
         }
 
     def identify_high_stress_weeks(self, threshold: int = 4) -> List[Dict[str, Any]]:

@@ -30,7 +30,8 @@
 </div>
 {% elif summary %}
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Attendance Card -->
     <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-green-500">
         <h2 class="text-xl font-semibold mb-2">Attendance</h2>
@@ -59,7 +60,20 @@
     </div>
 </div>
 
-<div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-bold mb-4 text-gray-700">Stress Levels Over Time</h3>
+        <canvas id="stressChart"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-bold mb-4 text-gray-700">Sleep Hours Over Time</h3>
+        <canvas id="sleepChart"></canvas>
+    </div>
+</div>
+
+<!-- Submit Survey Form -->
+<div class="bg-white p-6 rounded-lg shadow-md">
     <h2 class="text-2xl font-bold mb-4">Submit New Survey</h2>
     <form id="surveyForm" class="space-y-4">
         <input type="hidden" id="student_id" value="{{ student.id }}">
@@ -81,30 +95,93 @@
     </form>
 </div>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.getElementById('surveyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-        student_id: parseInt(document.getElementById('student_id').value),
-        stress_level: parseInt(document.getElementById('stress_level').value),
-        hours_slept: parseFloat(document.getElementById('hours_slept').value),
-        comments: document.getElementById('comments').value
-    };
+    // Prepare data from backend
+    const historyData = {{ history|tojson }};
+    
+    if (historyData && historyData.dates && historyData.dates.length > 0) {
+        // Stress Chart
+        const stressCtx = document.getElementById('stressChart').getContext('2d');
+        new Chart(stressCtx, {
+            type: 'line',
+            data: {
+                labels: historyData.dates,
+                datasets: [{
+                    label: 'Stress Level',
+                    data: historyData.stress_levels,
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
 
-    const res = await fetch('/api/submit-survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    if (res.ok) {
-        alert('Survey submitted!');
-        location.reload();
+        // Sleep Chart
+        const sleepCtx = document.getElementById('sleepChart').getContext('2d');
+        new Chart(sleepCtx, {
+            type: 'bar',
+            data: {
+                labels: historyData.dates,
+                datasets: [{
+                    label: 'Hours Slept',
+                    data: historyData.hours_slept,
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
     } else {
-        const err = await res.json();
-        alert('Error: ' + err.message);
+        // Handle no data case
+        document.getElementById('stressChart').parentElement.innerHTML += '<p class="text-gray-500 text-center mt-10">No data available</p>';
+        document.getElementById('sleepChart').parentElement.innerHTML += '<p class="text-gray-500 text-center mt-10">No data available</p>';
     }
-});
+
+    // Survey Form Handler
+    document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            student_id: parseInt(document.getElementById('student_id').value),
+            stress_level: parseInt(document.getElementById('stress_level').value),
+            hours_slept: parseFloat(document.getElementById('hours_slept').value),
+            comments: document.getElementById('comments').value
+        };
+
+        const res = await fetch('/api/submit-survey', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            alert('Survey submitted!');
+            location.reload();
+        } else {
+            const err = await res.json();
+            alert('Error: ' + err.message);
+        }
+    });
 </script>
 
 {% endif %}
