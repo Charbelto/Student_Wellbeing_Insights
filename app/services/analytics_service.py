@@ -29,18 +29,11 @@ class AnalyticsService:
         }
 
     def identify_high_stress_weeks(self, threshold: int = 4) -> List[Dict[str, Any]]:
-        # This is a bit tricky with the current mock storage since we don't have a "get all surveys" method exposed in WellbeingService.
-        # For now, I'll iterate through the private storage for demonstration, or I should add a method to WellbeingService.
-        # To respect encapsulation/MVC, I should add a method to WellbeingService to get all surveys, or mock it here.
-        # Since I can't easily change the interface of WellbeingService in the middle of this specific file write without multiple steps,
-        # and `_storage` is accessible (protected convention), I will access it directly for this prototype phase or assume I can get all.
-        # Better approach: The service should probably have `get_all_surveys()`.
-        
-        # However, looking at my WellbeingService implementation, it has `_storage`.
-        # I will iterate `_storage` which is available on the instance.
-        
+        # Updated to use public method
         high_stress_reports = []
-        for survey in self.wellbeing_service._storage:
+        surveys = self.wellbeing_service.get_all_surveys()
+        
+        for survey in surveys:
             if survey.stress_level.value >= threshold:
                 high_stress_reports.append({
                     "student_id": survey.student_id,
