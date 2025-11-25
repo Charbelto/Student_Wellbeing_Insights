@@ -45,8 +45,10 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ student.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap font-medium">{{ student.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ student.email }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="/dashboard?student_id={{ student.id }}" class="text-blue-600 hover:text-blue-900">View Dashboard</a>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <a href="/dashboard?student_id={{ student.id }}" class="text-blue-600 hover:text-blue-900">Dashboard</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="/attendance/{{ student.id }}" class="text-green-600 hover:text-green-900">Attendance</a>
                     </td>
                 </tr>
                 {% else %}
@@ -59,4 +61,3 @@
     </div>
 </div>
 {% endblock %}
-

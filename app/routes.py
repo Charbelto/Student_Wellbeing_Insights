@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash
+from datetime import date
 
 main_bp = Blueprint('main', __name__)
 
@@ -18,31 +19,59 @@ def add_student():
     
     try:
         current_app.student_service.create_student(name, email)
-        # flash('Student added successfully!', 'success') # Need secret key for flash
     except ValueError as e:
-        # flash(str(e), 'error')
         return render_template('students.html', 
                              students=current_app.student_service.get_all_students(),
                              error=str(e))
         
     return redirect(url_for('main.students'))
 
+# --- ATTENDANCE ROUTES ---
+
+@main_bp.route('/attendance/<int:student_id>')
+def attendance_list(student_id):
+    student = current_app.student_service.get_student(student_id)
+    if not student:
+        return "Student not found", 404
+        
+    records = current_app.attendance_service.get_student_attendance(student_id)
+    return render_template('attendance.html', student=student, records=records)
+
+@main_bp.route('/attendance/add', methods=['POST'])
+def add_attendance():
+    student_id = request.form.get('student_id', type=int)
+    course_id = request.form.get('course_id')
+    status = request.form.get('status')
+    date_str = request.form.get('date')
+    
+    if date_str:
+        d = date.fromisoformat(date_str)
+    else:
+        d = date.today()
+        
+    current_app.attendance_service.record_attendance(student_id, course_id, status, d)
+    return redirect(url_for('main.attendance_list', student_id=student_id))
+
+@main_bp.route('/attendance/delete/<int:record_id>', methods=['POST'])
+def delete_attendance(record_id):
+    student_id = request.args.get('student_id', type=int)
+    current_app.attendance_service.delete_attendance(record_id)
+    return redirect(url_for('main.attendance_list', student_id=student_id))
+
+# --- DASHBOARD ROUTES ---
+
 @main_bp.route('/dashboard')
 def dashboard():
-    # If student_id is passed, show for that student, else show list or default
     student_id = request.args.get('student_id', type=int)
     
     if not student_id:
-        # If no student selected, try to pick the first one or show empty state
         students = current_app.student_service.get_all_students()
         if students:
             return redirect(url_for('main.dashboard', student_id=students[0].id))
         else:
-            # No students at all
             return render_template('dashboard.html', summary=None, error="No students found. Please add a student first.")
             
     summary = current_app.analytics_service.get_student_wellbeing_summary(student_id)
-    # Also fetch student details to display name
     student = current_app.student_service.get_student(student_id)
     all_students = current_app.student_service.get_all_students()
     
