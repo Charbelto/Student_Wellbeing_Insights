@@ -1,6 +1,8 @@
 import pytest
 import os
 import sqlite3
+import uuid
+import time
 from app.services.attendance_service import AttendanceService
 from app.services.submission_service import SubmissionService
 from app.services.wellbeing_service import WellbeingService
@@ -10,24 +12,30 @@ from app.services.user_service import UserService
 from app.database.models import Role
 from app import create_app
 
-TEST_DB = 'test_wellbeing_conftest.db'
-
 @pytest.fixture(scope='function')
 def db_setup():
     """Creates a new database for each test function."""
-    if os.path.exists(TEST_DB):
-        os.remove(TEST_DB)
-        
+    # Use a unique filename for each test to avoid Windows file lock issues (WinError 32)
+    # This prevents trying to delete a file that might still be closing from a previous test
+    db_name = f"test_wellbeing_{uuid.uuid4().hex}.db"
+    
     # Initialize DB
-    conn = sqlite3.connect(TEST_DB)
+    conn = sqlite3.connect(db_name)
     with open('app/database/schema.sql', 'r') as f:
         conn.executescript(f.read())
     conn.close()
     
-    yield TEST_DB
+    yield db_name
     
-    if os.path.exists(TEST_DB):
-        os.remove(TEST_DB)
+    # Cleanup with retry logic for robustness
+    for _ in range(10):
+        try:
+            if os.path.exists(db_name):
+                os.remove(db_name)
+            break
+        except PermissionError:
+            # Wait a bit for the file lock to release
+            time.sleep(0.1)
 
 @pytest.fixture
 def student_service(db_setup):
