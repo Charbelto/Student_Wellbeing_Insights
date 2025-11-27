@@ -30,6 +30,109 @@
 </div>
 {% elif summary %}
 
+<!--Course Info Card -->
+<div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-indigo-500 mb-8">
+    <h2 class="text-xl font-semibold mb-4 text-gray-800">Course Info</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <p class="text-gray-600 font-semibold text-sm">Degree</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ degree_name or "Degree Name" }}
+            </p>
+        </div>
+
+        <div>
+            <p class="text-gray-600 font-semibold text-sm">Year</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ year_of_study or "Year" }}
+            </p>
+        </div>
+    </div>
+</div>
+
+
+<!-- Student Profile / Lifestyle Card -->
+<div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-amber-500 mb-8">
+    <h2 class="text-xl font-semibold mb-4 text-gray-800">Student Profile</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Domicile -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Domicile</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.domicile or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Go home frequency -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Go home frequency</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.go_home_frequency or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Extracurricular activities per week -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Extracurricular activities per week</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.extracurricular_per_week is not none
+                    and (student.extracurricular_per_week ~ " activities")
+                    or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Commute type -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Commute type</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.commute_type or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Average commute time -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Average commute time</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.avg_commute_time_min is not none
+                    and (student.avg_commute_time_min ~ " min")
+                    or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Average screen time -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Average screen time</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.avg_screen_time_hours is not none
+                    and (student.avg_screen_time_hours ~ " hours/day")
+                    or "Not specified" }}
+            </p>
+        </div>
+
+        <!-- Medical information -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Medical information</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.medical_information or "None reported" }}
+            </p>
+        </div>
+
+        <!-- Disabilities -->
+        <div>
+            <p class="text-gray-500 font-semibold text-sm tracking-wide">Disabilities</p>
+            <p class="text-lg text-gray-900 mt-1">
+                {{ student.disabilities or "None reported" }}
+            </p>
+        </div>
+
+    </div>
+</div>
+
+
+
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Attendance Card -->
