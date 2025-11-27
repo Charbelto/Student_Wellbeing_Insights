@@ -1,3 +1,4 @@
 pytest
 pydantic
 flask
+flask_login
