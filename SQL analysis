@@ -1,0 +1,123 @@
+import pandas as pd
+import sqlite3
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 0)  
+
+
+xls_path = "final_data.xlsx"
+
+subs = pd.read_excel(xls_path, sheet_name="Submissions")
+fb   = pd.read_excel(xls_path, sheet_name="module feedback")
+students = pd.read_excel(xls_path, sheet_name="Students")
+risk_indicators = pd.read_excel(xls_path, sheet_name="risk indicators")
+survey = pd.read_excel(xls_path, sheet_name="survey")
+
+# Optional filters bound as parameters (set to actual values to filter safely)
+hours_filter = None
+student_filter = None
+module_filter = None
+domicile_filter = None
+
+
+# Module ids were stored as floats in the spreadsheet, so coerce them to ints
+subs["module_id"] = subs["module_id"].round().astype("Int64")
+fb["module_id"] = fb["module_id"].astype("Int64")
+conn = sqlite3.connect(":memory:")
+
+subs.to_sql("submissions", conn, if_exists="replace", index=False)
+fb.to_sql("module_feedback", conn, if_exists="replace", index=False)
+students.to_sql("Students", conn, if_exists="replace", index=False)
+risk_indicators.to_sql("risk_indicators", conn, if_exists="replace", index=False)
+survey.to_sql("survey", conn, if_exists="replace", index=False)
+
+def run_query(sql: str, params=None) -> pd.DataFrame:
+    """Execute a parameterized query safely."""
+    return pd.read_sql_query(sql, conn, params=params or [])
+
+# avg mark vs hours outside class
+query = """ 
+SELECT
+    mf.hours_outside_class,
+    AVG(s.mark) AS avg_mark,
+    COUNT(*) AS sample_size
+FROM module_feedback AS mf
+JOIN submissions AS s
+    ON s.student_id = mf.student_id
+   AND s.module_id  = mf.module_id
+WHERE (? IS NULL OR mf.hours_outside_class = ?)
+GROUP BY mf.hours_outside_class
+ORDER BY mf.hours_outside_class;
+
+"""
+
+result = run_query(query, params=(hours_filter, hours_filter))
+print(result)
+
+
+#average rating per student
+query_2= """ 
+SELECT  
+    mf.student_id,
+    mf.module_id,
+    (
+        mf.engaging_content
+        + mf.comfortable_asking_questions
+        + mf.pace_rating
+        + mf.prepared_for_exams
+    ) / 4.0 AS avg_rating
+FROM module_feedback AS mf
+WHERE (? IS NULL OR mf.student_id = ?)
+ORDER BY mf.student_id, mf.module_id;
+
+"""
+
+result_2 = run_query(query_2, params=(student_filter, student_filter))
+print(result_2)
+
+# average mark per module 
+query_3 = """
+SELECT 
+    ROUND(AVG(s.mark), 2) AS avg_mark,
+    s.module_id
+FROM submissions AS s
+WHERE (? IS NULL OR s.module_id = ?)
+GROUP BY s.module_id
+ORDER BY avg_mark ASC
+"""
+
+result_3 = run_query(query_3, params=(module_filter, module_filter))
+print(result_3)
+
+#nationality vs results 
+query_4= """
+SELECT
+    st.domicile AS nationality,
+    ROUND(AVG(ri.avg_mark), 2) AS avg_mark
+FROM Students AS st
+JOIN risk_indicators AS ri
+    ON ri.student_id = st.student_id
+WHERE (? IS NULL OR st.domicile = ?)
+GROUP BY st.domicile
+ORDER BY avg_mark ASC;
+
+"""
+result_4 = run_query(query_4, params=(domicile_filter, domicile_filter))
+print(result_4)
+
+#  avg stress level between nationalities
+query_5 = """
+SELECT
+    st.domicile AS nationality,
+    ROUND(AVG(su.mood_score),2) AS mood_score,
+    ROUND(AVG(su.hours_slept),2) AS hours_slept,
+    ROUND(AVG(su.stress_level),2) AS stress_level
+FROM Students AS st
+JOIN survey as su
+    ON su.student_id = st.student_id
+WHERE (? IS NULL OR st.domicile = ?)
+GROUP BY st.domicile
+ORDER BY stress_level ASC;
+"""
+result_5 = run_query(query_5, params=(domicile_filter, domicile_filter))
+print(result_5)
