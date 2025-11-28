@@ -3,7 +3,19 @@ class Queries:
     # -------------- STUDENTS --------------
     INSERT_STUDENT = """ 
         INSERT INTO students (
-            student_id, degree_id, degree_name, year, age_band, domicile, go_home_frequency, extracurricular_per_week, avg_commute_time_min, avg_screen_time_hours, commute_type, medical_information, disabilities
+            student_id,
+            degree_id,
+            degree_name,
+            year,
+            age_band,
+            domicile,
+            go_home_frequency,
+            extracurricular_per_week,
+            avg_commute_time_min,
+            avg_screen_time_hours,
+            commute_type,
+            medical_information,
+            disabilities
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """
@@ -40,7 +52,19 @@ class Queries:
 
     UPDATE_STUDENT = """
         UPDATE students SET
-            student_id = ?, degree_id = ?, degree_name, = ? year = ?, age_band = ?, domicile = ?, go_home_frequency = ?, extracurricular_per_week = ?, avg_commute_time_min = ?, avg_screen_time_hours = ?, commute_type = ?, medical_information = ?, disabilities = ?
+            student_id = ?,
+            degree_id = ?,
+            degree_name = ?,
+            year = ?,
+            age_band = ?,
+            domicile = ?,
+            go_home_frequency = ?,
+            extracurricular_per_week = ?,
+            avg_commute_time_min = ?,
+            avg_screen_time_hours = ?,
+            commute_type = ?,
+            medical_information = ?,
+            disabilities = ?
         WHERE student_id = ?;
     """
 
@@ -87,7 +111,7 @@ class Queries:
     
     UPDATE_NAME = """
         UPDATE student_names SET
-            student_id = ?
+            student_id = ?,
             name = ?
         WHERE student_id = ?;
     """
@@ -134,50 +158,58 @@ class Queries:
     # -------------- MODULES --------------
     INSERT_MODULE = """
         INSERT INTO modules (
-            module_id, degree_id, code, name, semester, lecture_day, lecture_time, difficulty_level
+            module_id,
+            degree_id,
+            code,
+            name,
+            semester,
+            lecture_day,
+            lecture_time,
+            difficulty_level
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
     
     DELETE_MODULE = """
         DELETE FROM modules 
-        WHERE module_id = ?
-            OR code = ?;
+        WHERE module_id = ?;
     """
     
     UPDATE_MODULE = """
         UPDATE modules SET
-            module_id = ?, degree_id = ?, code = ?, name = ?, semester = ?, lecture_day = ?, lecture_time = ?, difficulty_level = ?
-        WHERE module_id = ?
-            OR code = ?;
+            module_id = ?,
+            degree_id = ?,
+            code = ?,
+            name = ?,
+            semester = ?,
+            lecture_day = ?,
+            lecture_time = ?,
+            difficulty_level = ?
+        WHERE module_id = ?;
     """
     
     GET_MODULE = """
         SELECT *
         FROM modules
-        WHERE module_id = ?
-            OR code = ?;
+        WHERE module_id = ?;
     """
     
     GET_ALL_MODULES_FROM_DEGREE = """
         SELECT * 
         FROM modules
-        WHERE module_id = ?
-            OR code = ?;
+        WHERE degree_id = ?;
     """
     
     GET_ALL_MODULES_FROM_SEMESTER = """
         SELECT * 
         FROM modules
-        WHERE module_id = ?
-            OR code = ?;
+        WHERE semester = ?;
     """
     
     GET_ALL_MODULES_FROM_DAY = """
         SELECT * 
         FROM modules
-        WHERE module_id = ?
-            OR code = ?;
+        WHERE lecture_day = ?;
     """
     
     GET_ALL_MODULES = """
@@ -188,7 +220,14 @@ class Queries:
     # -------------- MODULE FEEDBACK --------------
     INSERT_FEEDBACK = """
         INSERT INTO module_feedback (
-            feedback_id, student_id, module_id, engaging_content, comfortable_asking_questions, pace_rating, prepared_for_exams, hours_outside_class
+            feedback_id,
+            student_id,
+            module_id,
+            engaging_content,
+            comfortable_asking_questions,
+            pace_rating,
+            prepared_for_exams,
+            hours_outside_class
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
@@ -200,7 +239,14 @@ class Queries:
     
     UPDATE_FEEDBACK = """
         UPDATE module_feedback SET
-            feedback_id = ?, student_id = ?, module_id = ?, engaging_content = ?, comfortable_asking_questions = ?, pace_rating = ?, prepared_for_exams = ?, hours_outside_class = ?
+            feedback_id = ?,
+            student_id = ?,
+            module_id = ?,
+            engaging_content = ?,
+            comfortable_asking_questions = ?,
+            pace_rating = ?,
+            prepared_for_exams = ?,
+            hours_outside_class = ?
         WHERE feedback_id = ?;
     """
     
@@ -218,7 +264,11 @@ class Queries:
     # -------------- ATTENDANCE --------------
     INSERT_ATTENDANCE = """
         INSERT INTO attendance (
-            student_id, module_id, total_sessions, attended_sessions, attendance_rate
+            student_id,
+            module_id,
+            total_sessions,
+            attended_sessions,
+            attendance_rate
         )
         VALUES (?, ?, ?, ?, ?);
     """
@@ -228,7 +278,7 @@ class Queries:
         WHERE student_id = ?;
     """
     
-    DELETE_MODULE_ATTENDANCE = """
+    DELETE_MODULE_STUDENT_ATTENDANCE = """
         DELETE FROM attendance 
         WHERE student_id = ?
             AND module_id = ?;
@@ -236,7 +286,11 @@ class Queries:
     
     UPDATE_ATTENDANCE = """
         UPDATE attendance SET
-            student_id = ?, module_id = ?, total_sessions = ?, attended_sessions = ?, attendance_rate = ?
+            student_id = ?,
+            module_id = ?,
+            total_sessions = ?,
+            attended_sessions = ?,
+            attendance_rate = ?
         WHERE student_id = ?
             AND module_id = ?;
     """
@@ -266,7 +320,7 @@ class Queries:
 
     ATTENDANCE_PERCENTAGE_FOR_MODULE = """
         SELECT
-            module_id
+            module_id,
             (AVG(CAST(REPLACE(attendance_rate, '%', '') AS REAL)) || '%') AS avg_attendance_rate
         FROM attendance
         GROUP BY module_id;
@@ -274,7 +328,13 @@ class Queries:
 
     # -------------- SURVEY --------------
     INSERT_SURVEY = """
-        INSERT INTO survey (student_id, week, stress_level, hours_slept, mood_score)
+        INSERT INTO survey (
+            student_id,
+            week,
+            stress_level,
+            hours_slept,
+            mood_score
+        )
         VALUES (?, ?, ?, ?, ?);
     """
     
@@ -285,7 +345,11 @@ class Queries:
     
     UPDATE_SURVEY = """
         UPDATE survey SET
-            student_id = ?, week = ?, stress_level = ?, hours_slept = ?, mood_score = ?
+            student_id = ?,
+            week = ?,
+            stress_level = ?,
+            hours_slept = ?,
+            mood_score = ?
         WHERE student_id = ?;
     """
 
@@ -298,7 +362,7 @@ class Queries:
     AVG_WELLBEING_STATS = """
         SELECT 
             AVG(stress_level) AS avg_stress,
-            AVG(hours_slept) AS avg_sleep
+            AVG(hours_slept) AS avg_sleep,
             AVG(mood_score) AS avg_mood
         FROM survey
         WHERE student_id = ?;
@@ -307,7 +371,15 @@ class Queries:
     # -------------- SUBMISSIONS --------------
     INSERT_SUBMISSION = """
         INSERT INTO submissions (
-            submission_id, student_id, module_id, semester, deadline_datetime, submitted_datetime, early_late_submissions, mark, late
+            submission_id,
+            student_id,
+            module_id,
+            semester,
+            deadline_datetime,
+            submitted_datetime,
+            early_late_submissions,
+            mark,
+            late
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
     """
@@ -324,7 +396,15 @@ class Queries:
     
     UPDATE_SUBMISSION = """
         UPDATE submissions SET
-            submission_id = ?, student_id = ?, module_id = ?, semester = ?, deadline_datetime = ?, submitted_datetime = ?, early_late_submissions = ?,mark = ?, late = ?
+            submission_id = ?,
+            student_id = ?,
+            module_id = ?,
+            semester = ?,
+            deadline_datetime = ?,
+            submitted_datetime = ?,
+            early_late_submissions = ?,
+            mark = ?,
+            late = ?
         WHERE submission_id = ?;
     """
 
@@ -332,7 +412,7 @@ class Queries:
         SELECT *
         FROM submissions
         WHERE student_id = ?
-        ORDER BY submission_date DESC;
+        ORDER BY submitted_datetime DESC;
     """
 
     GET_MARKS_FOR_STUDENT = """
@@ -347,7 +427,7 @@ class Queries:
         WHERE student_id = ?;
     """
     
-    AVG_GRADE_FOR_STUDENT_MODULE = """
+    AVG_GRADE_FOR_IND_STUDENT_MODULE = """
         SELECT AVG(mark) AS avg_grade
         FROM submissions
         WHERE student_id = ?
@@ -357,7 +437,7 @@ class Queries:
     LATE_PERCENTAGE = """
         SELECT
             COUNT(*) as submissions_total,
-            SUM(CASE WHEN late = 'TRUE' THEN 1 ELSE 0 END) AS late_sumbissions,
+            SUM(CASE WHEN late = 'TRUE' THEN 1 ELSE 0 END) AS late_submissions,
             (SUM(CASE WHEN late = 'TRUE' THEN 1 ELSE 0 END) * 1.0 /COUNT(*)) * 100 AS percentage_late
         FROM submissions
         WHERE student_id = ?;
@@ -366,9 +446,15 @@ class Queries:
     # -------------- RISK INDICATORS --------------
     INSERT_RISK = """
         INSERT INTO risk_indicator (
-        
-    )
-        VALUES (?);
+            student_id,
+            avg_stress,
+            late_submissions,
+            avg_mark,
+            min_mark,
+            max_mark,
+            risk_level
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?);
     """
     
     DELETE_RISK = """
@@ -378,7 +464,13 @@ class Queries:
     
     UPDATE_RISK = """
         UPDATE risk_indicator SET
-             = ?
+            student_id = ?,
+            avg_stress = ?,
+            late_submissions = ?,
+            avg_mark = ?,
+            min_mark = ?,
+            max_mark = ?,
+            risk_level = ?
         WHERE student_id = ?;
     """
     
@@ -389,7 +481,7 @@ class Queries:
         FROM risk_indicator
         INNER JOIN student_names
         ON risk_indicator.student_id = student_names.student_id
-        WHERE student_id = ?;
+        WHERE risk_indicator.student_id = ?;
     """
     
     GET_HIGH_RISK = """
@@ -399,7 +491,7 @@ class Queries:
         FROM risk_indicator
         LEFT JOIN student_names
         ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_level = 'High';
+        WHERE risk_indicator.risk_level = 'High';
     """
     
     GET_MEDIUM_RISK = """
@@ -409,7 +501,7 @@ class Queries:
         FROM risk_indicator
         LEFT JOIN student_names
         ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_level = 'High' OR 'Medium';
+        WHERE risk_indicator.risk_level IN('High', 'Medium');
     """
     
     # User can input a value and all students with a stress higher than the input will be returned
@@ -434,7 +526,7 @@ class Queries:
             risk_indicator.*
         FROM risk_indicator
         LEFT JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id
+        ON risk_indicator.student_id = student_names.student_id;
     """
 
     # -------------- ANALYTICS --------------
@@ -461,4 +553,48 @@ class Queries:
         ON modules.degree_id = degrees.degree_id;
     """
 
+    # Average grade by degree
+    AVG_GRADE_BY_DEGREE = """
+        SELECT
+            degrees.degree_name,
+            AVG(submissions.mark) AS avg_grade
+        FROM submissions
+        INNER JOIN modules ON submissions.module_id = modules.module_id
+        INNER JOIN degrees ON modules.degree_id = degrees.degree_id
+        GROUP BY degrees.degree_name;
+    """
+
+    # Stress vs Sleep for each individual student
+    STRESS_SLEEP_CORRELATION = """
+        SELECT
+            student_id,
+            AVG(stress_level) AS avg_stress,
+            AVG(hours_slept) AS avg_sleep
+        FROM survey
+        GROUP BY student_id;
+    """
+
+    # Attendance vs mark for each individual student
+    ATTENDANCE_VS_MARKS = """
+        SELECT
+            submissions.module_id,
+            AVG(attendance.attendance_rate) AS avg_attendance,
+            AVG(submissions.mark) AS avg_mark
+        FROM submissions
+        INNER JOIN attendance ON submissions.student_id = attendance.student_id
+            AND submissions.module_id = attendance.module_id
+        GROUP BY submissions.module_id;
+    """
+
+    # High Stress vs High Mark
+    HIGH_STRESS_HIGH_PERFORMANCE = """
+        SELECT
+            survey.student_id,
+            AVG(survey.stress_level) AS avg_stress,
+            AVG(submissions.mark) AS avg_grade
+        FROM survey
+        INNER JOIN submissions ON survey.student_id = submissions.student_id
+        GROUP BY survey.student_id
+        HAVING avg_stress > 7 AND avg_grade > 70;
+    """
 
