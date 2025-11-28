@@ -25,8 +25,11 @@ Student_Wellbeing_Insights
   - show analytics
     - average: 
       - attendance per student
-      - average amount of times students with a membership attend the gym per week
-      - proportion of students going to the university gym vs not
+      - average screen time
+      - average mark per module
+      - percentage of late submissions broken down into modules/course
+
+    - pie chart of types of commute
       
     - attendance rate throughout the term (week 1 to week 10) - bar
 
@@ -41,17 +44,14 @@ Student_Wellbeing_Insights
 	    > prepared_for_exams
 	    take these four stats and create an average, compare this to other metrics, for example avg_stress from risk indicators
 
-    - average commute time vs avg_stress- scatter
+    - Average commute time vs avg_stress by commute_type - scatter
 
       See if there is a correlation between commuting and stress, maybe offer students free bus passes or something to help reduce their commute times.
-
-    - types of commutes vs avg_stress
-
-      MAYBE ADD A TYPE OF COMMUTE TO SPREADSHEET
-
       For example, the university could use this info to encourage students to walk or use a bicycle more, if the data correlates with this.
 
-    - average screen time vs extracurricular p/w - if there is negative correlation, the university could encourage more students to engage with more extracurriculars, maybe reference an article that mentions increased social media usage with negative mental health
+    - average screen time vs extracurricular p/w - 
+    
+      if there is negative correlation, the university could encourage more students to engage with more extracurriculars, maybe reference an article that mentions increased social media usage with negative mental health
 
     - semester vs mark vs difference between deadline and submitted datetime. - 3x scatter overlayed (mark vs difference in time for each semester)
 
