@@ -17,7 +17,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE students (
-    student_id INTEGER PRIMARY KEY,
+    student_id TEXT PRIMARY KEY,
     degree_id INTEGER NOT NULL, -- Internal FK
     degree_name TEXT NOT NULL,
     year INTEGER NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE modules (
     semester INTEGER NOT NULL,
     lecture_day TEXT NOT NULL,
     lecture_time TEXT NOT NULL,
-    difficulty_level TEXT NOT NULL,
+    difficulty_level TEXT,
     FOREIGN KEY (degree_id) REFERENCES degrees (degree_id)
 );
 
@@ -96,7 +96,7 @@ CREATE TABLE submissions (
     deadline_datetime DATETIME NOT NULL,
     submitted_datetime DATETIME NOT NULL,
     early_late_submissions INTEGER NOT NULL,
-    mark REAL NOT NULL,
+    mark REAL,
     late BOOLEAN NOT NULL,
     FOREIGN KEY (student_id) REFERENCES students (student_id),
     FOREIGN KEY (module_id) REFERENCES modules (module_id)
@@ -104,11 +104,11 @@ CREATE TABLE submissions (
 
 CREATE TABLE risk_indicator(
     student_id TEXT PRIMARY KEY, -- Internal FK
-    avg_stressINTEGER NOT NULL,
-    late_submissions REAL NOT NULL,
-    avg_mark INTEGER NOT NULL,
-    min_mark INTEGER NOT NULL,
-    max_mark INTEGER NOT NULL,
+    avg_stress REAL NOT NULL,
+    late_submissions INTEGER NOT NULL,
+    avg_mark REAL NOT NULL,
+    min_mark REAL NOT NULL,
+    max_mark REAL NOT NULL,
     risk_level TEXT NOT NULL,
     FOREIGN KEY (student_id) REFERENCES students (student_id)
 );

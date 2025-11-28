@@ -24,31 +24,78 @@ class User(UserMixin, BaseModel):
     role: Role
 
 class Student(BaseModel):
-    id: int # e.g. u2554630 (might need to handle string IDs if they have 'u' prefix, but schema said integer. The excel has 'u' prefix. I should change schema to Text or strip 'u')
-    name: str # Excel doesn't have name? It has ID. I might need to fake names or use ID as name.
-    email: Optional[str] = None
-    degree_name: Optional[str] = None
-    medical_info: Optional[str] = None
+    student_id: str
+    degree_id: int
+    degree_name: str
+    year: int
+    age_band: str
+    domicile: str
+    go_home_frequency: Optional[str] = None
+    extracurricular_per_week: Optional[int] = None
+    avg_commute_time_min: Optional[int] = None
+    avg_screen_time_hours: Optional[int] = None
+    commute_type: Optional[str] = None
+    medical_information: Optional[str] = None
     disabilities: Optional[str] = None
-    
+
+class StudentName(BaseModel):
+    student_id: str
+    name: str
+
+class Degree(BaseModel):
+    degree_id: int
+    degree_name: str
+
+class Module(BaseModel):
+    module_id: int
+    degree_id: int
+    code: str
+    name: str
+    semester: int
+    lecture_day: str
+    lecture_time: str
+    difficulty_level: Optional[str] = None
+
+class ModuleFeedback(BaseModel):
+    feedback_id: str
+    student_id: str
+    module_id: int
+    engaging_content: int
+    comfortable_asking_questions: int
+    pace_rating: int
+    prepared_for_exams: int
+    hours_outside_class: int
+
 class Attendance(BaseModel):
-    id: Optional[int] = None
-    student_id: int
-    date: date
-    status: str
-    course_id: str
+    student_id: str
+    module_id: int
+    total_sessions: int
+    attended_sessions: int
+    attendance_rate: str
+
+class Survey(BaseModel):
+    student_id: str
+    week: int
+    stress_level: int
+    hours_slept: int
+    mood_score: int
 
 class Submission(BaseModel):
-    id: Optional[int] = None
-    student_id: int
-    assignment_id: str
-    submission_date: datetime
-    grade: Optional[float] = None
+    submission_id: int
+    student_id: str
+    module_id: int
+    semester: int
+    deadline_datetime: datetime
+    submitted_datetime: datetime
+    early_late_submissions: int
+    mark: Optional[float] = None
+    late: bool
 
-class WellbeingSurvey(BaseModel):
-    id: Optional[int] = None
-    student_id: int
-    date: date
-    stress_level: StressLevel
-    hours_slept: float
-    comments: Optional[str] = None
+class RiskIndicator(BaseModel):
+    student_id: str
+    avg_stress: float
+    late_submissions: int
+    avg_mark: float
+    min_mark: float
+    max_mark: float
+    risk_level: str
