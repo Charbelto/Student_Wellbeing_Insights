@@ -200,9 +200,10 @@
             <input type="number" id="hours_slept" step="0.1" class="w-full border p-2 rounded" required>
         </div>
         <div>
-            <label class="block text-gray-700">Comments</label>
-            <textarea id="comments" class="w-full border p-2 rounded"></textarea>
+            <label class="block text-gray-700">Mood Score (1-10)</label>
+            <input type="number" id="mood_score" min="1" max="10" class="w-full border p-2 rounded" required>
         </div>
+        <!-- Comments removed as not in schema -->
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             Submit Survey
         </button>
@@ -276,10 +277,11 @@
     document.getElementById('surveyForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
-            student_id: parseInt(document.getElementById('student_id').value),
+            student_id: document.getElementById('student_id').value,
             stress_level: parseInt(document.getElementById('stress_level').value),
             hours_slept: parseFloat(document.getElementById('hours_slept').value),
-            comments: document.getElementById('comments').value
+            mood_score: parseInt(document.getElementById('mood_score').value),
+            week: 1 // Hardcoded week for now as prototype
         };
 
         const res = await fetch('/api/submit-survey', {
