@@ -7,7 +7,7 @@ class WellbeingService:
     def __init__(self, db_name='wellbeing.db'):
         self.db_name = db_name
 
-    def submit_survey(self, student_id: int, week: int, stress_level: int, hours_slept: float, mood_score: int,) -> Survey:
+    def submit_survey(self, student_id: str, week: int, stress_level: int, hours_slept: int, mood_score: int,) -> Survey:
         # Basic validation – adjust ranges if you have explicit rules
         if not (1 <= stress_level <= 5):
             raise ValueError(f"Invalid stress level: {stress_level}. Must be between 1 and 5.")
@@ -37,7 +37,7 @@ class WellbeingService:
             mood_score=mood_score,
         )
 
-    def get_student_history(self, student_id: int) -> List[Survey]:
+    def get_student_history(self, student_id: str) -> List[Survey]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute(

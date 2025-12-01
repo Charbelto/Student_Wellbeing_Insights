@@ -11,7 +11,7 @@ class AnalyticsService:
         self.submission_service = submission_service
         self.db_name = db_name
 
-    def get_student_wellbeing_summary(self, student_id: int) -> Dict[str, Any]:
+    def get_student_wellbeing_summary(self, student_id: str) -> Dict[str, Any]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         
@@ -44,7 +44,7 @@ class AnalyticsService:
             "average_hours_slept": avg_sleep
         }
 
-    def get_student_wellbeing_history(self, student_id: int, limit: int = 30) -> Dict[str, List[Any]]:
+    def get_student_wellbeing_history(self, student_id: str, limit: int = 30) -> Dict[str, List[Any]]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         

@@ -7,7 +7,7 @@ class AttendanceService:
     def __init__(self, db_name='wellbeing.db'):
         self.db_name = db_name
 
-    def record_attendance(self, student_id: int, course_id: str, status: str, date: date) -> Attendance:
+    def record_attendance(self, student_id: str, course_id: str, status: str, date: date) -> Attendance:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
@@ -26,7 +26,7 @@ class AttendanceService:
             date=date
         )
 
-    def get_student_attendance(self, student_id: int) -> List[Attendance]:
+    def get_student_attendance(self, student_id: str) -> List[Attendance]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM attendance WHERE student_id = ?", (student_id,))
@@ -41,7 +41,7 @@ class AttendanceService:
             date=row['date']
         ) for row in rows]
 
-    def calculate_average_attendance(self, student_id: int) -> float:
+    def calculate_average_attendance(self, student_id: str) -> float:
         records = self.get_student_attendance(student_id)
         if not records:
             return 0.0

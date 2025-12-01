@@ -7,7 +7,7 @@ class SubmissionService:
     def __init__(self, db_name='wellbeing.db'):
         self.db_name = db_name
 
-    def submit_assignment(self, student_id: int, assignment_id: str, submission_date: datetime) -> Submission:
+    def submit_assignment(self, student_id: str, assignment_id: str, submission_date: datetime) -> Submission:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         
@@ -56,7 +56,7 @@ class SubmissionService:
             grade=row['grade']
         )
 
-    def get_student_submissions(self, student_id: int) -> List[Submission]:
+    def get_student_submissions(self, student_id: str) -> List[Submission]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM submissions WHERE student_id = ?", (student_id,))

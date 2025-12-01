@@ -48,7 +48,7 @@ class StudentService:
             conn.close()
             raise ValueError(f"Database error: {e}")
 
-    def get_student(self, student_id: int) -> Optional[Student]:
+    def get_student(self, student_id: str) -> Optional[Student]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
@@ -81,7 +81,7 @@ class StudentService:
             disabilities=row['disabilities']
         )
 
-    def delete_student(self, student_id: int) -> bool:
+    def delete_student(self, student_id: str) -> bool:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         
