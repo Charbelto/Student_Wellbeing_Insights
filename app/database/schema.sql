@@ -75,7 +75,7 @@ CREATE TABLE attendance (
     module_id INTEGER NOT NULL,
     total_sessions INTEGER NOT NULL,
     attended_sessions INTEGER NOT NULL,
-    attendance_rate TEXT NOT NULL,
+    attendance_rate REAL NOT NULL,
     FOREIGN KEY (student_id) REFERENCES students (student_id)
 );
 

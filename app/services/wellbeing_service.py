@@ -2,6 +2,7 @@ from typing import List, Optional
 from datetime import date
 from app.database.models import Survey, StressLevel
 from app.database.connection import get_db_connection
+import app.database.queries as q
 
 class WellbeingService:
     def __init__(self, db_name='wellbeing.db'):
@@ -18,13 +19,7 @@ class WellbeingService:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            INSERT INTO wellbeing_surveys (student_id, week, stress_level, hours_slept, mood_score)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (student_id, week, stress_level, hours_slept, mood_score),
-        )
+        cursor.execute(q.INSERT_SURVEY,(student_id, week, stress_level, hours_slept, mood_score))
         conn.commit()
         conn.close()
 
@@ -40,14 +35,7 @@ class WellbeingService:
     def get_student_history(self, student_id: str) -> List[Survey]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT student_id, week, stress_level, hours_slept, mood_score
-            FROM wellbeing_surveys
-            WHERE student_id = ?
-            ORDER BY week
-            """,
-            (student_id,),
+        cursor.execute(q.GET_SURVEY_FOR_STUDENT, (student_id,),
         )
         rows = cursor.fetchall()
         conn.close()
@@ -63,16 +51,16 @@ class WellbeingService:
             for row in rows
         ]
 
-    def delete_survey(self, survey_id: int) -> bool:
+    def delete_survey(self, student_id: str, week: int) -> bool:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         
-        cursor.execute("SELECT id FROM wellbeing_surveys WHERE id = ?", (survey_id,))
+        cursor.execute(q.GET_SURVEY_BY_WEEK, (student_id, week))
         if not cursor.fetchone():
             conn.close()
-            raise ValueError(f"Survey with id {survey_id} not found")
+            raise ValueError(f"Survey with student id {student_id} from week {week} not found")
             
-        cursor.execute("DELETE FROM wellbeing_surveys WHERE id = ?", (survey_id,))
+        cursor.execute(q.DELETE_SURVEY, (student_id, week))
         conn.commit()
         conn.close()
         return True
@@ -81,7 +69,7 @@ class WellbeingService:
     def get_all_surveys(self) -> List[Survey]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM wellbeing_surveys")
+        cursor.execute(q.GET_ALL_SURVEYS)
         rows = cursor.fetchall()
         conn.close()
         

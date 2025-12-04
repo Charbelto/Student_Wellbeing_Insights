@@ -1,5 +1,40 @@
 # Placeholder for SQL queries
 class Queries:
+    # -------------- USERS --------------
+    INSERT_USER = """
+        INSERT INTO users (
+            username,
+            password_hash,
+            role
+        )
+        VALUES(?, ?, ?)
+    """
+
+    GET_USER_BY_ID = """
+        SELECT * 
+        FROM users 
+        WHERE id = ?
+    """
+
+    GET_USER_BY_USERNAME = """
+        SELECT * 
+        FROM users 
+        WHERE username = ?
+    """
+
+    UPDATE_USER = """
+        UPDATE users SET
+            id = ?,
+            username = ?,
+            password_hash = ?,
+            role = ?
+        WHERE id = ?;
+    """
+
+    DELETE_USER = """
+        DELETE FROM users 
+        WHERE id = ?;
+    """
     # -------------- STUDENTS --------------
     INSERT_STUDENT = """ 
         INSERT INTO students (
@@ -25,6 +60,16 @@ class Queries:
         FROM students 
         WHERE student_id = ?;
     """
+
+    GET_STUDENT_AND_NAME_BY_ID = """
+        SELECT 
+            student_names.name,
+            students.* 
+        FROM students
+        INNER JOIN student_names
+        ON students.student_id = student_names.student_id
+        WHERE students.student_id = ?;
+    """
     
     GET_STUDENTS_BY_DEGREE = """
         SELECT * 
@@ -48,6 +93,15 @@ class Queries:
     GET_ALL_STUDENTS = """
         SELECT * 
         FROM students;
+    """
+
+    GET_ALL_STUDENTS_AND_NAME = """
+        SELECT 
+            student_names.name,
+            students.* 
+        FROM students
+        INNER JOIN student_names
+        ON students.student_id = student_names.student_id
     """
 
     UPDATE_STUDENT = """
@@ -236,6 +290,11 @@ class Queries:
         DELETE FROM module_feedback 
         WHERE feedback_id = ?;
     """
+
+    DELETE_STUDENT_FEEDBACK = """
+        DELETE FROM module_feedback 
+        WHERE student_id = ?;
+    """
     
     UPDATE_FEEDBACK = """
         UPDATE module_feedback SET
@@ -295,8 +354,36 @@ class Queries:
             AND module_id = ?;
     """
 
+    UPDATE_ATTENDANCE_PRESENT = """
+        UPDATE attendance SET
+            attended_sessions = attended_sessions + 1,
+            total_sessions = total_sessions + 1,
+            attendance_rate = 
+                CAST(attended_sessions + 1 AS FLOAT) / CAST(total_sessions + 1 AS FLOAT)
+        WHERE student_id = ?
+        AND module_id = ?;
+    """
+
+    UPDATE_ATTENDANCE_ABSENT = """
+        UPDATE attendance SET
+            total_sessions = total_sessions + 1,
+            attendance_rate = 
+                CASE 
+                    WHEN total_sessions + 1 = 0 THEN 0
+                    ELSE CAST(attended_sessions AS FLOAT) / CAST(total_sessions + 1 AS FLOAT)
+                END
+        WHERE student_id = ?
+        AND module_id = ?;
+   """
+
     GET_ATTENDANCE_FOR_STUDENT = """
         SELECT *
+        FROM attendance
+        WHERE student_id = ?;
+    """
+
+    GET_ATTENDANCE_RATE_FOR_STUDENT = """
+        SELECT attendance_rate
         FROM attendance
         WHERE student_id = ?;
     """
@@ -305,6 +392,13 @@ class Queries:
         SELECT *
         FROM attendance
         WHERE module_id = ?;
+    """
+
+    GET_ATTENDANCE_FOR_STUDENT_AND_MODULE = """
+        SELECT *
+        FROM attendance
+        WHERE student_id = ?
+        AND module_id = ?;
     """
     
     GET_ATTENDANCE_FOR_COURSE = """
@@ -340,6 +434,12 @@ class Queries:
     
     DELETE_SURVEY = """
         DELETE FROM survey 
+        WHERE student_id = ? 
+        AND week = ?;
+    """
+
+    DELETE_STUDENT_SURVEY = """
+        DELETE FROM survey 
         WHERE student_id = ?;
     """
     
@@ -353,7 +453,18 @@ class Queries:
         WHERE student_id = ?;
     """
 
-    GET_WELLBEING_FOR_STUDENT = """
+    GET_ALL_SURVEYS = """
+        SELECT * 
+        FROM survey
+    """
+
+    GET_SURVEY_BY_WEEK = """
+        SELECT * FROM survey
+        WHERE student_id = ?
+        AND week = ?;
+    """
+
+    GET_SURVEY_FOR_STUDENT = """
         SELECT * FROM survey
         WHERE student_id = ?
         ORDER BY week ASC;
@@ -364,6 +475,13 @@ class Queries:
             AVG(stress_level) AS avg_stress,
             AVG(hours_slept) AS avg_sleep,
             AVG(mood_score) AS avg_mood
+        FROM survey
+        WHERE student_id = ?;
+    """
+
+    AVG_STRESS_STAT = """
+        SELECT 
+            AVG(stress_level) AS avg_stress,
         FROM survey
         WHERE student_id = ?;
     """
@@ -389,7 +507,7 @@ class Queries:
         WHERE submission_id = ?;
     """
     
-    DELETE_SUBMISSIONS_STUDENT = """
+    DELETE_STUDENT_SUBMISSIONS = """
         DELETE FROM submissions 
         WHERE student_id = ?;
     """
@@ -406,6 +524,18 @@ class Queries:
             mark = ?,
             late = ?
         WHERE submission_id = ?;
+    """
+
+    UPDATE_MARK = """
+        UPDATE submissions SET
+            mark = ?
+        WHERE submission_id = ?;
+    """
+
+    GET_SUBMISSION = """
+        SELECT *
+        FROM submissions
+        WHERE submission_id = ?
     """
 
     GET_SUBMISSIONS_FOR_STUDENT = """

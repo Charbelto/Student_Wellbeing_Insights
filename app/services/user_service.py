@@ -2,6 +2,7 @@ from typing import Optional
 from app.database.models import User, Role
 from app.database.connection import get_db_connection
 from werkzeug.security import generate_password_hash, check_password_hash
+import app.database.queries as q
 
 class UserService:
     def __init__(self, db_name='wellbeing.db'):
@@ -14,7 +15,7 @@ class UserService:
         password_hash = generate_password_hash(password)
         
         cursor.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            q.INSERT_USER,
             (username, password_hash, role.value)
         )
         conn.commit()
@@ -37,7 +38,7 @@ class UserService:
     def get_user_by_username(self, username: str) -> Optional[User]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        cursor.execute(q.GET_USER_BY_USERNAME, (username,))
         row = cursor.fetchone()
         conn.close()
         
@@ -53,7 +54,7 @@ class UserService:
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        cursor.execute(q.GET_USER_BY_ID, (user_id,))
         row = cursor.fetchone()
         conn.close()
         

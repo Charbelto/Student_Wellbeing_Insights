@@ -71,7 +71,7 @@ class Attendance(BaseModel):
     module_id: int
     total_sessions: int
     attended_sessions: int
-    attendance_rate: str
+    attendance_rate: float
 
 class Survey(BaseModel):
     student_id: str
