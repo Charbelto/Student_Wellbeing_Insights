@@ -10,7 +10,6 @@ from app.services.analytics_service import AnalyticsService
 from app.services.student_service import StudentService
 from app.services.user_service import UserService
 from app.database.models import Role
-from app import create_app
 
 @pytest.fixture(scope='function')
 def db_setup():
