@@ -5,7 +5,8 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 0)  
 
 
-xls_path = "final_data.xlsx"
+xls_path = "app/database/PAI_finalised.xlsx"
+
 
 subs = pd.read_excel(xls_path, sheet_name="Submissions")
 fb   = pd.read_excel(xls_path, sheet_name="module feedback")
