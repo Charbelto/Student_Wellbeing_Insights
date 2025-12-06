@@ -4,112 +4,68 @@ from app.database.models import Submission
 from app.database.connection import get_db_connection
 import app.database.queries as q
 
+
+def _ensure_datetime(value) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    raise ValueError("submission_date must be a datetime or ISO string")
+
+
 class SubmissionService:
-    def __init__(self, db_name='wellbeing.db'):
+    def __init__(self, db_name: str = 'wellbeing.db'):
         self.db_name = db_name
 
-    def submit_assignment(self, submission_id: int,
-                        student_id: str,
-                        module_id: int,
-                        semester: int,
-                        deadline_datetime: datetime,
-                        submitted_datetime: datetime,
-                        early_late_submissions: int,
-                        late: bool,
-                        mark: float = None) -> Submission:
+    def submit_assignment(self, student_id: int, assignment_id: str, submission_date) -> Submission:
+        dt = _ensure_datetime(submission_date)
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-        
-        cursor.execute(q.INSERT_SUBMISSION,
-            (submission_id,
-            student_id,
-            module_id,
-            semester,
-            deadline_datetime,
-            submitted_datetime,
-            early_late_submissions,
-            mark,
-            late)
-        )
+        cursor.execute(q.INSERT_SUBMISSION, (student_id, assignment_id, dt.isoformat(), None))
         conn.commit()
         submission_id = cursor.lastrowid
-        conn.close()
-        
-        return Submission(
-            submission_id=submission_id,
-            student_id=student_id,
-            module_id=module_id,
-            semester=semester,
-            deadline_datetime=deadline_datetime,
-            submitted_datetime=submitted_datetime,
-            early_late_submissions=early_late_submissions,
-            mark=mark,
-            late=late
-        )
-
-    def grade_submission(self, submission_id: int, mark: float) -> Submission:
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-        
         cursor.execute(q.GET_SUBMISSION, (submission_id,))
         row = cursor.fetchone()
-        if not row:
+        conn.close()
+        return self._row_to_submission(row)
+
+    def grade_submission(self, submission_id: int, grade: float) -> Submission:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.UPDATE_SUBMISSION_GRADE, (grade, submission_id))
+        if cursor.rowcount == 0:
             conn.close()
             raise ValueError(f"Submission with id {submission_id} not found")
-            
-        cursor.execute(q.UPDATE_MARK, (mark, submission_id))
         conn.commit()
-        conn.close()
-        
-        # Fetch updated
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
         cursor.execute(q.GET_SUBMISSION, (submission_id,))
         row = cursor.fetchone()
         conn.close()
-        
-        return Submission(
-            submission_id=row['submission_id'],
-            student_id=row['student_id'],
-            module_id=row['module_id'],
-            semester=row['semester'],
-            deadline_datetime=row['deadline_datetime'],
-            submitted_datetime=row['submitted_datetime'],
-            early_late_submissions=row['early_late_submissions'],
-            mark=row['mark'],
-            late=row['late']
-        )
+        return self._row_to_submission(row)
 
-    def get_student_submissions(self, student_id: str) -> List[Submission]:
+    def get_student_submissions(self, student_id: int) -> List[Submission]:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         cursor.execute(q.GET_SUBMISSIONS_FOR_STUDENT, (student_id,))
         rows = cursor.fetchall()
         conn.close()
-        
-        return [Submission(
-            submission_id=row['submission_id'],
-            student_id=row['student_id'],
-            module_id=row['module_id'],
-            semester=row['semester'],
-            deadline_datetime=row['deadline_datetime'],
-            submitted_datetime=row['submitted_datetime'],
-            early_late_submissions=row['early_late_submissions'],
-            mark=row['mark'],
-            late=row['late']
-        ) for row in rows]
+        return [self._row_to_submission(row) for row in rows]
 
     def delete_submission(self, submission_id: int) -> bool:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
-
-        try:
-            cursor.execute(q.GET_SUBMISSION, (submission_id,))
-            if not cursor.fetchone():
-                raise ValueError(f"Submission with id {submission_id} not found")
-                
-            cursor.execute(q.DELETE_SUBMISSION, (submission_id,))
-            conn.commit()
-            return True
-        finally:
+        cursor.execute(q.DELETE_SUBMISSION, (submission_id,))
+        if cursor.rowcount == 0:
             conn.close()
+            raise ValueError(f"Submission with id {submission_id} not found")
+        conn.commit()
+        conn.close()
+        return True
+
+    def _row_to_submission(self, row) -> Submission:
+        return Submission(
+            id=row["id"],
+            student_id=row["student_id"],
+            assignment_id=row["assignment_id"],
+            submission_date=datetime.fromisoformat(row["submission_date"]),
+            grade=row["grade"],
+        )

@@ -1,730 +1,163 @@
-# Placeholder for SQL queries
-class Queries:
-    # -------------- USERS --------------
-    INSERT_USER = """
-        INSERT INTO users (
-            username,
-            password_hash,
-            role
-        )
-        VALUES(?, ?, ?)
-    """
+"""
+Central place for all SQL used by the services.
+Keeping the statements in one module avoids scattering raw SQL strings
+throughout the codebase and makes the tests easier to reason about.
+"""
 
-    GET_USER_BY_ID = """
-        SELECT * 
-        FROM users 
-        WHERE id = ?
-    """
+# ---------------- USERS ----------------
+INSERT_USER = """
+    INSERT INTO users (username, password_hash, role)
+    VALUES (?, ?, ?);
+"""
 
-    GET_USER_BY_USERNAME = """
-        SELECT * 
-        FROM users 
-        WHERE username = ?
-    """
+GET_USER_BY_ID = """
+    SELECT *
+    FROM users
+    WHERE id = ?;
+"""
 
-    UPDATE_USER = """
-        UPDATE users SET
-            id = ?,
-            username = ?,
-            password_hash = ?,
-            role = ?
-        WHERE id = ?;
-    """
+GET_USER_BY_USERNAME = """
+    SELECT *
+    FROM users
+    WHERE username = ?;
+"""
 
-    DELETE_USER = """
-        DELETE FROM users 
-        WHERE id = ?;
-    """
-    # -------------- STUDENTS --------------
-    INSERT_STUDENT = """ 
-        INSERT INTO students (
-            student_id,
-            degree_id,
-            degree_name,
-            year,
-            age_band,
-            domicile,
-            go_home_frequency,
-            extracurricular_per_week,
-            avg_commute_time_min,
-            avg_screen_time_hours,
-            commute_type,
-            medical_information,
-            disabilities
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-    """
+UPDATE_USER = """
+    UPDATE users
+    SET username = ?, password_hash = ?, role = ?
+    WHERE id = ?;
+"""
 
-    GET_STUDENT_BY_ID = """
-        SELECT * 
-        FROM students 
-        WHERE student_id = ?;
-    """
+DELETE_USER = """
+    DELETE FROM users
+    WHERE id = ?;
+"""
 
-    GET_STUDENT_AND_NAME_BY_ID = """
-        SELECT 
-            student_names.name,
-            students.* 
-        FROM students
-        INNER JOIN student_names
-        ON students.student_id = student_names.student_id
-        WHERE students.student_id = ?;
-    """
-    
-    GET_STUDENTS_BY_DEGREE = """
-        SELECT * 
-        FROM students 
-        WHERE degree_id = ?
-        OR degree_name = ?;
-    """
-    
-    GET_STUDENTS_BY_MEDICAL_INFO = """
-        SELECT * 
-        FROM students 
-        WHERE medical_information != "None";
-    """
-    
-    GET_STUDENTS_BY_DISABILITY = """
-        SELECT * 
-        FROM students 
-        WHERE disabilities != "None";
-    """
-    
-    GET_ALL_STUDENTS = """
-        SELECT * 
-        FROM students;
-    """
+# ---------------- STUDENTS ----------------
+INSERT_STUDENT = """
+    INSERT INTO students (university_id, name, email, degree_name, year, medical_info, disabilities)
+    VALUES (?, ?, ?, ?, ?, ?, ?);
+"""
 
-    GET_ALL_STUDENTS_AND_NAME = """
-        SELECT 
-            student_names.name,
-            students.* 
-        FROM students
-        INNER JOIN student_names
-        ON students.student_id = student_names.student_id
-    """
+GET_STUDENT_BY_ID = """
+    SELECT *
+    FROM students
+    WHERE id = ?;
+"""
 
-    UPDATE_STUDENT = """
-        UPDATE students SET
-            student_id = ?,
-            degree_id = ?,
-            degree_name = ?,
-            year = ?,
-            age_band = ?,
-            domicile = ?,
-            go_home_frequency = ?,
-            extracurricular_per_week = ?,
-            avg_commute_time_min = ?,
-            avg_screen_time_hours = ?,
-            commute_type = ?,
-            medical_information = ?,
-            disabilities = ?
-        WHERE student_id = ?;
-    """
+GET_STUDENT_BY_UNIVERSITY_ID = """
+    SELECT *
+    FROM students
+    WHERE university_id = ?;
+"""
 
-    DELETE_STUDENT = """
-        DELETE FROM students 
-        WHERE student_id = ?;
-    """
+GET_ALL_STUDENTS = """
+    SELECT *
+    FROM students
+    ORDER BY name ASC;
+"""
 
-    STUDENTS_BY_DEGREE = """
-        SELECT
-            degree_name,
-            COUNT(*) AS count
-        FROM students
-        GROUP BY degree_name;
-    """
+DELETE_STUDENT = """
+    DELETE FROM students
+    WHERE id = ?;
+"""
 
-    AVG_COMMUTE_BY_DEGREE = """
-        SELECT
-            degree_name,
-            AVG(avg_commute_time_min) AS avg_commute
-        FROM students
-        GROUP BY degree_name;
-    """
+# ---------------- ATTENDANCE ----------------
+INSERT_ATTENDANCE = """
+    INSERT INTO attendance (student_id, course_id, status, date)
+    VALUES (?, ?, ?, ?);
+"""
 
-    SCREEN_TIME_DISTRIBUTION = """
-        SELECT
-            avg_screen_time_hours,
-            COUNT(*) as count
-        FROM students
-        GROUP BY avg_screen_time_hours
-        ORDER BY avg_screen_time_hours;
-    """
+GET_ATTENDANCE_BY_ID = """
+    SELECT *
+    FROM attendance
+    WHERE id = ?;
+"""
 
-    # -------------- STUDENT NAMES --------------
-    INSERT_NAME = """
-        INSERT INTO student_names (student_id, name)
-        VALUES (?, ?);
-    """
-    
-    DELETE_NAME = """
-        DELETE FROM student_names 
-        WHERE student_id = ?;
-    """
-    
-    UPDATE_NAME = """
-        UPDATE student_names SET
-            student_id = ?,
-            name = ?
-        WHERE student_id = ?;
-    """
-    
-    GET_NAME = """
-        SELECT *
-        FROM student_names
-        WHERE student_id = ?;
-    """
-    
-    GET_ALL_NAMES = """
-        SELECT * 
-        FROM student_names;
-    """
+GET_ATTENDANCE_FOR_STUDENT = """
+    SELECT *
+    FROM attendance
+    WHERE student_id = ?
+    ORDER BY date ASC;
+"""
 
-    # -------------- DEGREES --------------
-    INSERT_DEGREE = """
-        INSERT INTO degrees (degree_name)
-        VALUES (?);
-    """
-    
-    DELETE_DEGREE = """
-        DELETE FROM degrees 
-        WHERE degree_id = ?;
-    """
-    
-    UPDATE_DEGREE = """
-        UPDATE degrees SET
-            degree_name = ?
-        WHERE degree_id = ?;
-    """
-    
-    GET_DEGREE = """
-        SELECT *
-        FROM degrees
-        WHERE degree_id = ?;
-    """
-    
-    GET_ALL_DEGREES = """
-        SELECT * 
-        FROM degrees;
-    """
-    
-    # -------------- MODULES --------------
-    INSERT_MODULE = """
-        INSERT INTO modules (
-            module_id,
-            degree_id,
-            code,
-            name,
-            semester,
-            lecture_day,
-            lecture_time,
-            difficulty_level
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-    """
-    
-    DELETE_MODULE = """
-        DELETE FROM modules 
-        WHERE module_id = ?;
-    """
-    
-    UPDATE_MODULE = """
-        UPDATE modules SET
-            module_id = ?,
-            degree_id = ?,
-            code = ?,
-            name = ?,
-            semester = ?,
-            lecture_day = ?,
-            lecture_time = ?,
-            difficulty_level = ?
-        WHERE module_id = ?;
-    """
-    
-    GET_MODULE = """
-        SELECT *
-        FROM modules
-        WHERE module_id = ?;
-    """
-    
-    GET_ALL_MODULES_FROM_DEGREE = """
-        SELECT * 
-        FROM modules
-        WHERE degree_id = ?;
-    """
-    
-    GET_ALL_MODULES_FROM_SEMESTER = """
-        SELECT * 
-        FROM modules
-        WHERE semester = ?;
-    """
-    
-    GET_ALL_MODULES_FROM_DAY = """
-        SELECT * 
-        FROM modules
-        WHERE lecture_day = ?;
-    """
-    
-    GET_ALL_MODULES = """
-        SELECT * 
-        FROM modules;
-    """
+UPDATE_ATTENDANCE_STATUS = """
+    UPDATE attendance
+    SET status = ?
+    WHERE id = ?;
+"""
 
-    # -------------- MODULE FEEDBACK --------------
-    INSERT_FEEDBACK = """
-        INSERT INTO module_feedback (
-            feedback_id,
-            student_id,
-            module_id,
-            engaging_content,
-            comfortable_asking_questions,
-            pace_rating,
-            prepared_for_exams,
-            hours_outside_class
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-    """
-    
-    DELETE_FEEDBACK = """
-        DELETE FROM module_feedback 
-        WHERE feedback_id = ?;
-    """
+DELETE_ATTENDANCE = """
+    DELETE FROM attendance
+    WHERE id = ?;
+"""
 
-    DELETE_STUDENT_FEEDBACK = """
-        DELETE FROM module_feedback 
-        WHERE student_id = ?;
-    """
-    
-    UPDATE_FEEDBACK = """
-        UPDATE module_feedback SET
-            feedback_id = ?,
-            student_id = ?,
-            module_id = ?,
-            engaging_content = ?,
-            comfortable_asking_questions = ?,
-            pace_rating = ?,
-            prepared_for_exams = ?,
-            hours_outside_class = ?
-        WHERE feedback_id = ?;
-    """
-    
-    GET_FEEDBACK = """
-        SELECT *
-        FROM module_feedback
-        WHERE feedback_id = ?;
-    """
-    
-    GET_ALL_FEEDBACK = """
-        SELECT * 
-        FROM module_feedback;
-    """
-    
-    # -------------- ATTENDANCE --------------
-    INSERT_ATTENDANCE = """
-        INSERT INTO attendance (
-            student_id,
-            module_id,
-            total_sessions,
-            attended_sessions,
-            attendance_rate
-        )
-        VALUES (?, ?, ?, ?, ?);
-    """
-    
-    DELETE_STUDENT_ATTENDANCE = """
-        DELETE FROM attendance 
-        WHERE student_id = ?;
-    """
-    
-    DELETE_MODULE_STUDENT_ATTENDANCE = """
-        DELETE FROM attendance 
-        WHERE student_id = ?
-            AND module_id = ?;
-    """
-    
-    UPDATE_ATTENDANCE = """
-        UPDATE attendance SET
-            student_id = ?,
-            module_id = ?,
-            total_sessions = ?,
-            attended_sessions = ?,
-            attendance_rate = ?
-        WHERE student_id = ?
-            AND module_id = ?;
-    """
+COUNT_ATTENDANCE_SUMMARY = """
+    SELECT
+        SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS present_count,
+        COUNT(*) AS total_count
+    FROM attendance
+    WHERE student_id = ?;
+"""
 
-    UPDATE_ATTENDANCE_PRESENT = """
-        UPDATE attendance SET
-            attended_sessions = attended_sessions + 1,
-            total_sessions = total_sessions + 1,
-            attendance_rate = 
-                CAST(attended_sessions + 1 AS FLOAT) / CAST(total_sessions + 1 AS FLOAT)
-        WHERE student_id = ?
-        AND module_id = ?;
-    """
+# ---------------- WELLBEING SURVEYS ----------------
+INSERT_SURVEY = """
+    INSERT INTO wellbeing_surveys (student_id, stress_level, hours_slept, comments)
+    VALUES (?, ?, ?, ?);
+"""
 
-    UPDATE_ATTENDANCE_ABSENT = """
-        UPDATE attendance SET
-            total_sessions = total_sessions + 1,
-            attendance_rate = 
-                CASE 
-                    WHEN total_sessions + 1 = 0 THEN 0
-                    ELSE CAST(attended_sessions AS FLOAT) / CAST(total_sessions + 1 AS FLOAT)
-                END
-        WHERE student_id = ?
-        AND module_id = ?;
-   """
+GET_SURVEY_BY_ID = """
+    SELECT *
+    FROM wellbeing_surveys
+    WHERE id = ?;
+"""
 
-    GET_ATTENDANCE_FOR_STUDENT = """
-        SELECT *
-        FROM attendance
-        WHERE student_id = ?;
-    """
+GET_SURVEYS_FOR_STUDENT = """
+    SELECT *
+    FROM wellbeing_surveys
+    WHERE student_id = ?
+    ORDER BY created_at ASC;
+"""
 
-    GET_ATTENDANCE_RATE_FOR_STUDENT = """
-        SELECT attendance_rate
-        FROM attendance
-        WHERE student_id = ?;
-    """
+DELETE_SURVEY = """
+    DELETE FROM wellbeing_surveys
+    WHERE id = ?;
+"""
 
-    GET_ATTENDANCE_FOR_MODULE = """
-        SELECT *
-        FROM attendance
-        WHERE module_id = ?;
-    """
+GET_WELLBEING_AVERAGES = """
+    SELECT
+        AVG(stress_level) AS avg_stress,
+        AVG(hours_slept) AS avg_sleep
+    FROM wellbeing_surveys
+    WHERE student_id = ?;
+"""
 
-    GET_ATTENDANCE_FOR_STUDENT_AND_MODULE = """
-        SELECT *
-        FROM attendance
-        WHERE student_id = ?
-        AND module_id = ?;
-    """
-    
-    GET_ATTENDANCE_FOR_COURSE = """
-        SELECT
-            degrees.degree_name,
-            attendance.*
-        FROM attendance
-        INNER JOIN modules
-        ON attendance.module_id = modules.module_id
-        INNER JOIN degrees
-        ON modules.degree_id = degrees.degree_id;
-    """
+# ---------------- SUBMISSIONS ----------------
+INSERT_SUBMISSION = """
+    INSERT INTO submissions (student_id, assignment_id, submission_date, grade)
+    VALUES (?, ?, ?, ?);
+"""
 
-    ATTENDANCE_PERCENTAGE_FOR_MODULE = """
-        SELECT
-            module_id,
-            (AVG(CAST(REPLACE(attendance_rate, '%', '') AS REAL)) || '%') AS avg_attendance_rate
-        FROM attendance
-        GROUP BY module_id;
-    """
+GET_SUBMISSION = """
+    SELECT *
+    FROM submissions
+    WHERE id = ?;
+"""
 
-    # -------------- SURVEY --------------
-    INSERT_SURVEY = """
-        INSERT INTO survey (
-            student_id,
-            week,
-            stress_level,
-            hours_slept,
-            mood_score
-        )
-        VALUES (?, ?, ?, ?, ?);
-    """
-    
-    DELETE_SURVEY = """
-        DELETE FROM survey 
-        WHERE student_id = ? 
-        AND week = ?;
-    """
+UPDATE_SUBMISSION_GRADE = """
+    UPDATE submissions
+    SET grade = ?
+    WHERE id = ?;
+"""
 
-    DELETE_STUDENT_SURVEY = """
-        DELETE FROM survey 
-        WHERE student_id = ?;
-    """
-    
-    UPDATE_SURVEY = """
-        UPDATE survey SET
-            student_id = ?,
-            week = ?,
-            stress_level = ?,
-            hours_slept = ?,
-            mood_score = ?
-        WHERE student_id = ?;
-    """
+GET_SUBMISSIONS_FOR_STUDENT = """
+    SELECT *
+    FROM submissions
+    WHERE student_id = ?
+    ORDER BY submission_date DESC;
+"""
 
-    GET_ALL_SURVEYS = """
-        SELECT * 
-        FROM survey
-    """
-
-    GET_SURVEY_BY_WEEK = """
-        SELECT * FROM survey
-        WHERE student_id = ?
-        AND week = ?;
-    """
-
-    GET_SURVEY_FOR_STUDENT = """
-        SELECT * FROM survey
-        WHERE student_id = ?
-        ORDER BY week ASC;
-    """
-
-    AVG_WELLBEING_STATS = """
-        SELECT 
-            AVG(stress_level) AS avg_stress,
-            AVG(hours_slept) AS avg_sleep,
-            AVG(mood_score) AS avg_mood
-        FROM survey
-        WHERE student_id = ?;
-    """
-
-    AVG_STRESS_STAT = """
-        SELECT 
-            AVG(stress_level) AS avg_stress,
-        FROM survey
-        WHERE student_id = ?;
-    """
-
-    # -------------- SUBMISSIONS --------------
-    INSERT_SUBMISSION = """
-        INSERT INTO submissions (
-            submission_id,
-            student_id,
-            module_id,
-            semester,
-            deadline_datetime,
-            submitted_datetime,
-            early_late_submissions,
-            mark,
-            late
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-    """
-    
-    DELETE_SUBMISSION = """
-        DELETE FROM submissions 
-        WHERE submission_id = ?;
-    """
-    
-    DELETE_STUDENT_SUBMISSIONS = """
-        DELETE FROM submissions 
-        WHERE student_id = ?;
-    """
-    
-    UPDATE_SUBMISSION = """
-        UPDATE submissions SET
-            submission_id = ?,
-            student_id = ?,
-            module_id = ?,
-            semester = ?,
-            deadline_datetime = ?,
-            submitted_datetime = ?,
-            early_late_submissions = ?,
-            mark = ?,
-            late = ?
-        WHERE submission_id = ?;
-    """
-
-    UPDATE_MARK = """
-        UPDATE submissions SET
-            mark = ?
-        WHERE submission_id = ?;
-    """
-
-    GET_SUBMISSION = """
-        SELECT *
-        FROM submissions
-        WHERE submission_id = ?
-    """
-
-    GET_SUBMISSIONS_FOR_STUDENT = """
-        SELECT *
-        FROM submissions
-        WHERE student_id = ?
-        ORDER BY submitted_datetime DESC;
-    """
-
-    GET_MARKS_FOR_STUDENT = """
-        SELECT module_id, mark
-        FROM submissions
-        WHERE student_id = ?;
-    """
-
-    AVG_GRADE_FOR_STUDENT = """
-        SELECT AVG(mark) AS avg_grade
-        FROM submissions
-        WHERE student_id = ?;
-    """
-    
-    AVG_GRADE_FOR_IND_STUDENT_MODULE = """
-        SELECT AVG(mark) AS avg_grade
-        FROM submissions
-        WHERE student_id = ?
-            AND module_id = ?;
-    """
-    
-    LATE_PERCENTAGE = """
-        SELECT
-            COUNT(*) as submissions_total,
-            SUM(CASE WHEN late = 'TRUE' THEN 1 ELSE 0 END) AS late_submissions,
-            (SUM(CASE WHEN late = 'TRUE' THEN 1 ELSE 0 END) * 1.0 /COUNT(*)) * 100 AS percentage_late
-        FROM submissions
-        WHERE student_id = ?;
-    """
-
-    # -------------- RISK INDICATORS --------------
-    INSERT_RISK = """
-        INSERT INTO risk_indicator (
-            student_id,
-            avg_stress,
-            late_submissions,
-            avg_mark,
-            min_mark,
-            max_mark,
-            risk_level
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?);
-    """
-    
-    DELETE_RISK = """
-        DELETE FROM risk_indicator 
-        WHERE student_id = ?;
-    """
-    
-    UPDATE_RISK = """
-        UPDATE risk_indicator SET
-            student_id = ?,
-            avg_stress = ?,
-            late_submissions = ?,
-            avg_mark = ?,
-            min_mark = ?,
-            max_mark = ?,
-            risk_level = ?
-        WHERE student_id = ?;
-    """
-    
-    GET_RISK = """
-        SELECT
-            student_names.name,
-            risk_indicator.*
-        FROM risk_indicator
-        INNER JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_indicator.student_id = ?;
-    """
-    
-    GET_HIGH_RISK = """
-        SELECT
-            student_names.name,
-            risk_indicator.*
-        FROM risk_indicator
-        LEFT JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_indicator.risk_level = 'High';
-    """
-    
-    GET_MEDIUM_RISK = """
-        SELECT
-            student_names.name,
-            risk_indicator.*
-        FROM risk_indicator
-        LEFT JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_indicator.risk_level IN('High', 'Medium');
-    """
-    
-    # User can input a value and all students with a stress higher than the input will be returned
-    GET_STRESS_RISK = """
-        SELECT
-            student_names.name,
-            risk_indicator.avg_stress
-        FROM risk_indicator
-        LEFT JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id
-        WHERE risk_indicator.avg_stress > ?;
-    """
-    
-    GET_ALL_RISKS = """
-        SELECT * 
-        FROM risk_indicator;
-    """
-    
-    GET_ALL_RISKS_NAMES = """
-        SELECT
-            student_names.name,
-            risk_indicator.*
-        FROM risk_indicator
-        LEFT JOIN student_names
-        ON risk_indicator.student_id = student_names.student_id;
-    """
-
-    # -------------- ANALYTICS --------------
-    # Average commute time vs avg_stress by commute type - scatter
-    COMMUTE_VS_AVG_STRESS = """
-        SELECT
-            risk_indicator.avg_stress,
-            students.avg_commute_time_min,
-            students.commute_type
-        FROM students
-        INNER JOIN risk_indicator
-        ON students.student_id = risk_indicator.student_id;
-    """
-
-    # Percentage of late submissions broken down into modules/course
-    PERC_LATE_BY_COURSE = """
-        SELECT
-            degrees.degree_name,
-            submissions.late
-        FROM submissions
-        INNER JOIN modules
-        ON submissions.module_id = modules.module_id
-        INNER JOIN degrees
-        ON modules.degree_id = degrees.degree_id;
-    """
-
-    # Average grade by degree
-    AVG_GRADE_BY_DEGREE = """
-        SELECT
-            degrees.degree_name,
-            AVG(submissions.mark) AS avg_grade
-        FROM submissions
-        INNER JOIN modules ON submissions.module_id = modules.module_id
-        INNER JOIN degrees ON modules.degree_id = degrees.degree_id
-        GROUP BY degrees.degree_name;
-    """
-
-    # Stress vs Sleep for each individual student
-    STRESS_SLEEP_CORRELATION = """
-        SELECT
-            student_id,
-            AVG(stress_level) AS avg_stress,
-            AVG(hours_slept) AS avg_sleep
-        FROM survey
-        GROUP BY student_id;
-    """
-
-    # Attendance vs mark for each individual student
-    ATTENDANCE_VS_MARKS = """
-        SELECT
-            submissions.module_id,
-            AVG(attendance.attendance_rate) AS avg_attendance,
-            AVG(submissions.mark) AS avg_mark
-        FROM submissions
-        INNER JOIN attendance ON submissions.student_id = attendance.student_id
-            AND submissions.module_id = attendance.module_id
-        GROUP BY submissions.module_id;
-    """
-
-    # High Stress vs High Mark
-    HIGH_STRESS_HIGH_PERFORMANCE = """
-        SELECT
-            survey.student_id,
-            AVG(survey.stress_level) AS avg_stress,
-            AVG(submissions.mark) AS avg_grade
-        FROM survey
-        INNER JOIN submissions ON survey.student_id = submissions.student_id
-        GROUP BY survey.student_id
-        HAVING avg_stress > 7 AND avg_grade > 70;
-    """
-
+DELETE_SUBMISSION = """
+    DELETE FROM submissions
+    WHERE id = ?;
+"""

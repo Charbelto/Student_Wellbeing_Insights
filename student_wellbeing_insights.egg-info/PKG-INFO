@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: student-wellbeing-insights
+Version: 0.1.0
+Summary: Flask-based wellbeing insights prototype
+Requires-Python: >=3.10
+Requires-Dist: flask
+Requires-Dist: flask_login
+Requires-Dist: pydantic

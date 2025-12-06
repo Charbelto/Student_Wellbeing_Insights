@@ -38,11 +38,12 @@ def add_student():
     if current_user.role != Role.WELLBEING_OFFICER:
         abort(403)
 
+    university_id = request.form.get('university_id') or request.form.get('name')
     name = request.form.get('name')
     email = request.form.get('email')
     
     try:
-        current_app.student_service.create_student(university_id=name, name=name, email=email)
+        current_app.student_service.create_student(university_id, name, email)
     except ValueError as e:
         flash(str(e), 'error')
         return redirect(url_for('main.students'))
@@ -107,34 +108,17 @@ def submission_list(student_id):
 @main_bp.route('/submissions/add', methods=['POST'])
 @login_required
 def add_submission():
-    student_id = request.form.get('student_id') # Keep as string/text per schema
-    module_id = request.form.get('module_id', type=int)
-    date_str = request.form.get('submission_date')
-    deadline_str = request.form.get('deadline')
-    
-    if not module_id:
-        flash("Module ID is required", "error")
+    student_id = request.form.get('student_id', type=int)
+    assignment_id = request.form.get('assignment_id')
+    submission_date = request.form.get('submission_date')
+    submitted_d = datetime.fromisoformat(submission_date) if submission_date else datetime.now()
+
+    if not assignment_id:
+        flash("Assignment ID is required", "error")
         return redirect(url_for('main.submission_list', student_id=student_id))
 
-    if date_str:
-        submitted_d = datetime.fromisoformat(date_str)
-    else:
-        submitted_d = datetime.now()
-        
-    if deadline_str:
-        deadline_d = datetime.fromisoformat(deadline_str)
-    else:
-        # Default to submitted date (not late)
-        deadline_d = submitted_d
-    
     try:
-        current_app.submission_service.submit_assignment(
-            student_id=student_id, 
-            module_id=module_id, 
-            semester=1, # Default
-            deadline_datetime=deadline_d,
-            submitted_datetime=submitted_d
-        )
+        current_app.submission_service.submit_assignment(student_id, assignment_id, submitted_d)
     except Exception as e:
         flash(f"Error adding submission: {e}", "error")
 
@@ -144,9 +128,9 @@ def add_submission():
 @login_required
 def grade_submission(submission_id):
     student_id = request.args.get('student_id')
-    mark = request.form.get('mark', type=float)
+    grade = request.form.get('grade', type=float)
     
-    current_app.submission_service.grade_submission(submission_id, mark)
+    current_app.submission_service.grade_submission(submission_id, grade)
     return redirect(url_for('main.submission_list', student_id=student_id))
 
 @main_bp.route('/submissions/delete/<int:submission_id>', methods=['POST'])
@@ -193,13 +177,11 @@ def submit_survey():
         return jsonify({"status": "error", "message": "No data provided"}), 400
         
     try:
-        # week defaults to 1 if not provided
         current_app.wellbeing_service.submit_survey(
             student_id=data['student_id'],
             stress_level=data['stress_level'],
             hours_slept=data['hours_slept'],
-            mood_score=data.get('mood_score', 5),
-            week=data.get('week', 1)
+            comments=data.get('comments')
         )
         return jsonify({"status": "success"}), 201
     except Exception as e:

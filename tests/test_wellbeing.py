@@ -1,6 +1,6 @@
 import pytest
 from datetime import date
-from app.database.models import WellbeingSurvey, StressLevel
+from app.database.models import Survey, StressLevel
 
 def test_submit_survey(wellbeing_service):
     student_id = 1
