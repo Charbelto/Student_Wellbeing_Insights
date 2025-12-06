@@ -3,6 +3,7 @@ import os
 import sqlite3
 import uuid
 import time
+from app import create_app
 from app.services.attendance_service import AttendanceService
 from app.services.submission_service import SubmissionService
 from app.services.wellbeing_service import WellbeingService
