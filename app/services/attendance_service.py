@@ -12,6 +12,12 @@ class AttendanceService:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
 
+        # Ensure a record exists
+        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
+        row = cursor.fetchone()
+        if not row:
+            cursor.execute(q.INSERT_ATTENDANCE, (student_id, module_id, 0, 0, 0.0))
+
         cursor.execute(q.UPDATE_ATTENDANCE_PRESENT, (student_id, module_id))
         cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
         row = cursor.fetchone()
@@ -30,6 +36,12 @@ class AttendanceService:
     def record_absence(self, student_id: str, module_id: str) -> Attendance:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
+
+        # Ensure a record exists
+        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
+        row = cursor.fetchone()
+        if not row:
+            cursor.execute(q.INSERT_ATTENDANCE, (student_id, module_id, 0, 0, 0.0))
 
         cursor.execute(q.UPDATE_ATTENDANCE_ABSENT, (student_id, module_id))
         cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
