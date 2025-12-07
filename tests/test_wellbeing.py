@@ -1,43 +1,30 @@
 import pytest
-pytest.skip("Legacy wellbeing tests skipped for updated schema", allow_module_level=True)
-from datetime import date
-from app.database.models import Survey, StressLevel
+from app.database.connection import get_db_connection
 
-def test_submit_survey(wellbeing_service):
-    student_id = 1
-    stress_level = 3
-    hours_slept = 7.5
-    comments = "Feeling okay"
-    
-    survey = wellbeing_service.submit_survey(student_id, stress_level, hours_slept, comments)
-    
-    assert isinstance(survey, WellbeingSurvey)
-    assert survey.stress_level == StressLevel.MODERATE
-    assert survey.hours_slept == 7.5
-    assert survey.comments == comments
 
-def test_submit_survey_validation_error(wellbeing_service):
-    # Assuming Pydantic validation or service validation triggers
-    with pytest.raises(ValueError):
-        wellbeing_service.submit_survey(1, 6, 8) # Stress level 6 is invalid
+@pytest.fixture
+def seeded_student(db_setup):
+    conn = get_db_connection(db_setup)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO students(student_id, degree_id, degree_name, year, age_band, domicile) VALUES(?,1,'CS',1,'18-21','UK')",
+        ("WB1",),
+    )
+    cur.execute("INSERT INTO student_names(student_id, name) VALUES(?, ?)", ("WB1", "Well Student"))
+    conn.commit()
+    conn.close()
+    return "WB1"
 
-def test_get_student_history(wellbeing_service):
-    wellbeing_service.submit_survey(1, 2, 8)
-    wellbeing_service.submit_survey(1, 4, 6)
-    
-    history = wellbeing_service.get_student_history(1)
+
+def test_submit_and_history(wellbeing_service, seeded_student):
+    wellbeing_service.submit_survey(seeded_student, week=1, stress_level=3, hours_slept=7, mood_score=3)
+    wellbeing_service.submit_survey(seeded_student, week=2, stress_level=4, hours_slept=6, mood_score=2)
+    history = wellbeing_service.get_student_history(seeded_student)
     assert len(history) == 2
-    assert history[0].stress_level == StressLevel.LOW
-    assert history[1].stress_level == StressLevel.HIGH
+    assert history[0].week == 1
+    assert history[1].stress_level == 4
 
-def test_delete_survey(wellbeing_service):
-    survey = wellbeing_service.submit_survey(1, 3, 7)
-    
-    success = wellbeing_service.delete_survey(survey.id)
-    
-    assert success is True
-    assert len(wellbeing_service.get_student_history(1)) == 0
 
-def test_delete_survey_not_found(wellbeing_service):
+def test_submit_validation_error(wellbeing_service, seeded_student):
     with pytest.raises(ValueError):
-        wellbeing_service.delete_survey(999)
+        wellbeing_service.submit_survey(seeded_student, week=1, stress_level=6, hours_slept=7, mood_score=3)

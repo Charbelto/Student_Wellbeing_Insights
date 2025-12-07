@@ -1,34 +1,25 @@
 import pytest
-pytest.skip("Legacy attendance route tests skipped for updated schema", allow_module_level=True)
-from datetime import date
+from app.database.models import Role
 
-def test_attendance_page(auth_client, student_service):
-    # Setup student
-    s = student_service.create_student("u1", "Att Student", "att@test.com")
-    response = auth_client.get(f'/attendance/{s.id}')
-    assert response.status_code == 200
-    assert b"Attendance Records" in response.data
 
-def test_add_attendance_route(auth_client, student_service):
-    s = student_service.create_student("u2", "Att Student 2", "att2@test.com")
-    
-    response = auth_client.post('/attendance/add', data={
-        'student_id': s.id,
-        'course_id': 'CS101',
-        'status': 'Present',
-        'date': '2023-10-01'
-    }, follow_redirects=True)
-    
-    assert response.status_code == 200
-    assert b"Present" in response.data
-    assert b"CS101" in response.data
+@pytest.fixture
+def officer_client(app, user_service):
+    user_service.create_user("route_officer", "pass", Role.WELLBEING_OFFICER)
+    c = app.test_client()
+    c.post("/login", data={"username": "route_officer", "password": "pass"}, follow_redirects=True)
+    return c
 
-def test_delete_attendance_route(auth_client, student_service, attendance_service):
-    s = student_service.create_student("u3", "Att Student 3", "att3@test.com")
-    att = attendance_service.record_attendance(s.id, "CS101", "Absent", date.today())
-    
-    response = auth_client.post(f'/attendance/delete/{att.id}?student_id={s.id}', follow_redirects=True)
-    
-    assert response.status_code == 200
-    # Should verify absence of the record or success message
-    # For now, just checking page load OK
+
+def test_api_students_officer_can_access(officer_client, db_setup, student_service):
+    student_service.create_student("Route Student", "RS1")
+    resp = officer_client.get("/api/students")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert isinstance(data, list)
+    assert any(s["student_id"] == "RS1" for s in data)
+
+
+def test_export_risk_officer(officer_client):
+    resp = officer_client.get("/export/risk")
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers.get("Content-Type", "")

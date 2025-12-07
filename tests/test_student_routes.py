@@ -1,23 +1,32 @@
 import pytest
-pytest.skip("Legacy student route tests skipped for updated schema", allow_module_level=True)
+from app.database.models import Role
 
-def test_student_list_empty(auth_client):
-    response = auth_client.get('/students')
-    assert response.status_code == 200
-    assert b"Students" in response.data
 
-def test_add_student(auth_client):
-    response = auth_client.post('/students/add', data={
-        'name': 'uNew', # Maps to university_id in new logic
-        'email': 'new@student.com'
-    }, follow_redirects=True)
-    
-    assert response.status_code == 200
-    assert b"uNew" in response.data # The ID is displayed
+@pytest.fixture
+def officer_client(app, user_service):
+    user_service.create_user("stud_officer", "pass", Role.WELLBEING_OFFICER)
+    c = app.test_client()
+    c.post("/login", data={"username": "stud_officer", "password": "pass"}, follow_redirects=True)
+    return c
 
-def test_add_student_duplicate_email(auth_client):
-    # In new logic, duplicate ID returns existing, doesn't error. 
-    # Duplicate email is not enforced as unique constraint in schema (only university_id is UNIQUE).
-    # So this test needs adjustment to what actually happens.
-    # If we add same ID twice, it just redirects.
-    pass
+
+def test_students_page(officer_client):
+    resp = officer_client.get("/students")
+    assert resp.status_code == 200
+
+
+def test_add_student_route(officer_client):
+    resp = officer_client.post(
+        "/students/add",
+        data={
+            "name": "Stu One",
+            "student_id": "STU1",
+            "degree_id": 1,
+            "degree_name": "CS",
+            "year": 1,
+            "age_band": "18-21",
+            "domicile": "UK",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
