@@ -1,105 +1,82 @@
-Student_Wellbeing_Insights
+Student Wellbeing Insights (Flask + SQLite)
+==========================================
 
-# Notes
-# Possible types of data university would collect:
-  - Surveys for well being
-    - Survey example:
-      - Rating 1 - 5 (1 - Strongly Disagree, 2 - Disagree, 3 - Neutral, 4 - Agree, 5 - Stronly Agree)
-      - The course is engaging
-      - I feel supported in my career prospects
-      - I feel encouraged to ask questions in class
-  - Lecture attendance
-  - Coursework submission
-  - Student contribution
-  - Extra-curricular classes, e.g. societies
-  - Gym/sports attendance
+A role-based wellbeing and engagement dashboard for university staff. It imports the provided `PAI_finalised.xlsx`, flags at-risk students, enforces privacy for sensitive fields, and offers analytics plus CSV exports.
 
-# User Requirements
-  - CRUD - create, read, update, and delete
-    - create new entry into tables - new possible data from data types above
-    - read different type of data
-    - update different fields
-    - delete entries
+Quick Start
+-----------
+```bash
+cd "C:\Users\Charbel\Desktop\New folder (9)"
+pip install -r requirements.txt
+python -m app.main
+# open http://127.0.0.1:5000
+```
 
-  - create graphs and diagrams from the data
-  - show analytics
-    - average: 
-      - attendance per student
-      - average screen time
-      - average mark per module
-      - percentage of late submissions broken down into modules/course
-    - pie chart of types of commute
-        
-    
-# SQL Code Notes
-- average attendance at different time intervals
+Seeded Accounts (auto on startup)
+---------------------------------
+- Wellbeing Officer: `officer / officer123`
+- Tutor: `tutor / tutor123`
+- Module Leader: `leader / lead123`
 
-- Percentage of students showing signs of high stress
+Data Import
+-----------
+- On first run (or when `students` has ≤1 rows), imports `app/database/PAI_finalised.xlsx`.
+- Sheets ingested (case-insensitive): `students`, `student names`, `degrees`, `modules`, `submissions`, `module feedback`, `risk indicators`, `survey`, `attendance`.
+- Names come from “student names”. If missing or pandas/openpyxl unavailable, a demo student is seeded.
+- To force re-import: delete `wellbeing.db` and restart.
 
-- Hours slept vs stress level
+Features
+--------
+- RBAC: Officer, Tutor, Module Leader; medical/disability fields are officer-only.
+- CRUD: students, attendance, submissions; wellbeing surveys.
+- Risk: flags High/Medium from risk table, avg stress ≥4, late submissions >2; detailed CSV export.
+- Analytics: Chart.js (stress trend, attendance vs mark); embedded PNGs on officer dashboard.
+- Lists: paginated students, at-risk, modules, submissions, attendance, feedback, risks.
+- User admin (officer): add/update/delete users (roles, optional password reset).
+- Exports: risk (detailed), students CSV.
+- Navigation: primary links + “More” dropdown; click to toggle, click outside to close.
 
-- Hours slept vs mood level
+Key Pages
+---------
+- `/` Home
+- `/dashboard?student_id=...` Student dashboard (profile, lifestyle, stats, charts, survey submit)
+- `/students` Students (paginated, actions to dashboard/attendance/submissions)
+- `/attendance/<student_id>` per-student attendance
+- `/submissions/<student_id>` per-student submissions
+- `/officer_dashboard` At-risk cards, KPIs, charts (officer)
+- `/analytics` Chart.js trend & scatter
+- Global tables: `/modules`, `/submissions/all`, `/attendance/all`, `/feedback/all`, officer-only `/risk/all`
+- User admin: `/users` (officer)
+- Exports: `/export/risk`, `/export/students`
 
-- Week number vs stress level
+Architecture (key files)
+------------------------
+- `app/main.py` – app entry, seeding (users + Excel import)
+- `app/routes.py` – routes, RBAC, pagination helpers, exports
+- `app/services/*` – business logic (students, attendance, submissions, wellbeing, analytics, users)
+- `app/templates/*` – Tailwind-based UI
+- `app/database/schema.sql` – SQLite schema (FK enabled)
+- `app/database/PAI_finalised.xlsx` – source data
+- `tests/` – pytest suite
 
-- Difficulty level vs attendance vs lecture start time
+Run Tests
+---------
+```bash
+cd "C:\Users\Charbel\Desktop\New folder (9)"
+pytest -q
+```
 
-  This would help identify if the difficulty of a module influences the attendance rate at different times of the day. Are students more likely to attend a class later in the day?
-  
-- Attendance rate throughout the term (week 1 to week 10) - bar
-
-- Average stress level throughout the term (week 1 to week 10) - line
-
-  This stat would show if stress increasing correlates with students attending less lectures. University could use this information to implement something that helps destress students later in the semester or to provide extra support and encourage students to attend their lectures later into the term.
-
-- Based on module feedback spreadsheet, create an average rating for each student. 
-  > engaging_content,
-  > comfortable_asking_questions,
-  > pace_rating,
-  > prepared_for_exams
-  take these four stats and create an average, compare this to other metrics, for example avg_stress from risk indicators
-
-- Average commute time vs avg_stress by commute_type - scatter
-
-  See if there is a correlation between commuting and stress, maybe offer students free bus passes or something to help reduce their commute times.
-  For example, the university could use this info to encourage students to walk or use a bicycle more, if the data correlates with this.
-
-- Average screen time vs extracurricular p/w - 
-
-  if there is negative correlation, the university could encourage more students to engage with more extracurriculars, maybe reference an article that mentions increased social media usage with negative mental health
-
-- Semester vs mark vs difference between deadline and submitted datetime. - 3x scatter overlayed (mark vs difference in time for each semester)
-
-  This would help the university understand if, as the year goes on, people are submitting assignments closer to the deadline and how this reflects on the mark they achieved. Possibly compare this to stress level. Maybe we can assume that a lower mark increases a student's stress level, unsure if we would need a reference for this.
-
-- Degree vs module feedback average
-
-  University could use this to help target groups of students that may be under more stress and feel less satisfied by their course.
-
-- Hours outside class vs mark achieved
-
-  Help the university to understand if there's a correlation between mark achieved and hours spent individually revising. Possible plan of action, encourage students to study more.
-
-- Mark vs module feedback average
-
-  University could use this to help support staff in providing better and more engaging lecture sessions, which in turn benefits the students who would feel more satisfied with their course.
-
-- Average grade by degree
-
-  Helps the university to understand which degree programs perform better or worse and may provide further insight into which courses need more support.
-
-- Stress vs Sleep for each individual student
-
-  Highlights whether sleep and stress are correlated, most likely showing that poor sleep and high stress are linked. University could use this to encourage students to prioritise sleep more and ensure they are properly resting.
-
-- Attendance vs mark for each individual student
-
-  Highlights if attendance impacts a students mark, may also highlight if something needs to be improved to increase student attendance.
-
-- High Stress vs High Mark
-  
-  University could use this to spot possible burnout from students under a lot of stress that are performing well and provide wellbeing support for these students.
-
-- certain stats we could further break down into UK vs Europe vs International, this would allow the university to target groups that need more support, for example, international students may have a higher stress level and may go home a lot less frequently, so the university could provide additional support to these students. 
-    
+Requirements
+------------
+Listed in `requirements.txt`:
+```
+pytest
+pydantic
+flask
+flask_login
+bcrypt
+matplotlib
+pandas
+openpyxl
+```
 
