@@ -34,7 +34,50 @@ class UserService:
         user = self.get_user_by_username(username)
         if not user:
             return False
-        return bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+        except ValueError:
+            # Handle legacy/invalid hashes gracefully
+            return False
+
+    def reset_password(self, username: str, new_password: str) -> bool:
+        """Reset password for an existing user, preserving role."""
+        user = self.get_user_by_username(username)
+        if not user:
+            return False
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(new_password.encode("utf-8"), salt).decode("utf-8")
+
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            q.UPDATE_USER,
+            (user.id, user.username, password_hash, user.role.value, user.id),
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def update_user(self, user_id: int, role: Role = None, password: str = None) -> bool:
+        user = self.get_user_by_id(user_id)
+        if not user:
+            return False
+
+        new_role = role or user.role
+        new_hash = user.password_hash
+        if password:
+            salt = bcrypt.gensalt()
+            new_hash = bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            q.UPDATE_USER,
+            (user.id, user.username, new_hash, new_role.value, user.id),
+        )
+        conn.commit()
+        conn.close()
+        return True
 
     def get_user_by_username(self, username: str) -> Optional[User]:
         conn = get_db_connection(self.db_name)

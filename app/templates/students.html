@@ -1,82 +1,104 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Student Management</h1>
-
-    {% if error %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        {{ error }}
+<div class="max-w-6xl mx-auto space-y-8">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <p class="text-sm font-semibold text-blue-600 uppercase tracking-wide">People</p>
+            <h1 class="text-3xl font-bold">Student Management</h1>
+            <p class="text-sm text-slate-500">Create, review, and manage student records.</p>
+        </div>
+        <div class="flex items-center space-x-2 text-sm text-slate-600">
+            <span class="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100">
+                {{ total_students }} students
+            </span>
+        </div>
     </div>
-    {% endif %}
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="bg-{{ 'red' if category == 'error' else 'green' }}-100 border border-{{ 'red' if category == 'error' else 'green' }}-400 text-{{ 'red' if category == 'error' else 'green' }}-700 px-4 py-3 rounded mb-4">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
 
     <!-- Add Student Form -->
-    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 class="text-xl font-semibold mb-4">Add New Student</h2>
-        <form action="/students/add" method="POST" class="flex gap-4">
-            <div class="flex-1">
-                <input type="text" name="name" placeholder="Full Name" required
-                       class="w-full border p-2 rounded">
-            </div>
-            <div class="flex-1">
-                <input type="email" name="email" placeholder="Email Address" required
-                       class="w-full border p-2 rounded">
-            </div>
-            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+    <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Add New Student</h2>
+            <p class="text-xs text-slate-500">Medical/Disability are stored; only officers can view them.</p>
+        </div>
+        <form action="/students/add" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" name="student_id" placeholder="Student ID" required class="w-full border border-slate-200 p-3 rounded-lg">
+            <input type="text" name="name" placeholder="Full Name" required class="w-full border border-slate-200 p-3 rounded-lg">
+            <input type="text" name="degree_name" placeholder="Degree e.g. CS" class="w-full border border-slate-200 p-3 rounded-lg" value="CS">
+            <input type="number" name="degree_id" placeholder="Degree ID" class="w-full border border-slate-200 p-3 rounded-lg" value="1" min="1">
+            <input type="number" name="year" placeholder="Year" class="w-full border border-slate-200 p-3 rounded-lg" value="1" min="1">
+            <input type="text" name="age_band" placeholder="Age band" class="w-full border border-slate-200 p-3 rounded-lg" value="18-21">
+            <input type="text" name="domicile" placeholder="Domicile" class="w-full border border-slate-200 p-3 rounded-lg" value="UK">
+            <input type="text" name="go_home_frequency" placeholder="Go home frequency" class="w-full border border-slate-200 p-3 rounded-lg">
+            <input type="number" name="extracurricular_per_week" placeholder="Extracurricular / week" class="w-full border border-slate-200 p-3 rounded-lg" min="0">
+            <input type="number" name="avg_commute_time_min" placeholder="Commute minutes" class="w-full border border-slate-200 p-3 rounded-lg" min="0">
+            <input type="number" name="avg_screen_time_hours" placeholder="Screen time hours" class="w-full border border-slate-200 p-3 rounded-lg" min="0">
+            <input type="text" name="commute_type" placeholder="Commute type" class="w-full border border-slate-200 p-3 rounded-lg">
+            <input type="text" name="medical_information" placeholder="Medical info (officer only)" class="w-full border border-slate-200 p-3 rounded-lg">
+            <input type="text" name="disabilities" placeholder="Disabilities" class="w-full border border-slate-200 p-3 rounded-lg">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 md:col-span-3 shadow">
                 Add Student
             </button>
         </form>
     </div>
 
     <!-- Student List -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <table class="min-w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for student in students %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ student.id }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ student.name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ student.email }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2 items-center">
-                        <a href="/dashboard?student_id={{ student.id }}" class="text-blue-600 hover:text-blue-900">Dashboard</a>
-                        <span class="text-gray-300">|</span>
-                        <a href="/attendance/{{ student.id }}" class="text-green-600 hover:text-green-900">Attendance</a>
-                        <span class="text-gray-300">|</span>
-                        <a href="/submissions/{{ student.id }}" class="text-purple-600 hover:text-purple-900">Submissions</a>
-                        
-                        {% if current_user.role.value == 'wellbeing_officer' %}
-                        <span class="text-gray-300">|</span>
-                        <form action="/students/delete/{{ student.id }}" method="POST" onsubmit="return confirm('Delete student data? This cannot be undone.');">
-                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
+    <div class="bg-white rounded-xl shadow border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">All Students</h3>
+            <span class="text-xs text-slate-500">Click actions to drill down</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Student ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Degree</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Year</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">{{ student.student_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium">{{ student.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-600">{{ student.degree_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-600">{{ student.year }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-wrap gap-2 items-center">
+                            <a href="/dashboard?student_id={{ student.student_id }}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+                            <a href="/attendance/{{ student.student_id }}" class="text-emerald-600 hover:text-emerald-800">Attendance</a>
+                            <a href="/submissions/{{ student.student_id }}" class="text-purple-600 hover:text-purple-800">Submissions</a>
+                            
+                            {% if current_user.role.value == 'wellbeing_officer' %}
+                            <form action="/students/delete/{{ student.student_id }}" method="POST" onsubmit="return confirm('Delete student data? This cannot be undone.');">
+                                <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-slate-500">No students found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if total_pages > 1 %}
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-center items-center space-x-2">
+            {% for p in page_numbers %}
+                {% if p == '...' %}
+                    <span class="px-2 text-slate-400">…</span>
+                {% elif p == page %}
+                    <span class="px-3 py-1 rounded-full bg-blue-600 text-white text-sm font-semibold">{{ p }}</span>
                 {% else %}
-                <tr>
-                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No students found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    <a href="{{ url_for('main.students') }}?page={{ p }}" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm hover:bg-slate-200">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

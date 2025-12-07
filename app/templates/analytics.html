@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <p class="text-sm font-semibold text-blue-600 uppercase tracking-wide">Analytics</p>
+            <h1 class="text-3xl font-bold text-slate-900">Engagement & Wellbeing</h1>
+            <p class="text-sm text-slate-600">Live charts powered by system data.</p>
+        </div>
+        <span class="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100 text-sm">Chart.js visuals</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow border border-slate-100">
+            <p class="text-xs uppercase tracking-wide text-slate-500 mb-1">Avg Pace Rating</p>
+            <p class="text-3xl font-bold text-indigo-600">{{ "%.1f"|format(feedback_summary.avg_pace_rating or 0) }}</p>
+            <p class="text-sm text-slate-500">From module feedback</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow border border-slate-100">
+            <p class="text-xs uppercase tracking-wide text-slate-500 mb-1">Stress Trend</p>
+            <p class="text-sm text-slate-600">Weekly average stress across all students.</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow border border-slate-100">
+            <p class="text-xs uppercase tracking-wide text-slate-500 mb-1">Attendance vs Mark</p>
+            <p class="text-sm text-slate-600">Correlation view per module.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+            <h3 class="text-lg font-semibold mb-4 text-slate-800">Stress Trend (All Students)</h3>
+            <canvas id="stressTrendChart"></canvas>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+            <h3 class="text-lg font-semibold mb-4 text-slate-800">Attendance vs Mark (Per Module)</h3>
+            <canvas id="attendanceMarkChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+async function loadStressTrend() {
+    const res = await fetch('/api/chart/stress_trend');
+    const data = await res.json();
+    const ctx = document.getElementById('stressTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.weeks,
+            datasets: [{
+                label: 'Avg Stress',
+                data: data.avg_stress,
+                borderColor: 'rgb(239,68,68)',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                tension: 0.2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+async function loadAttendanceMark() {
+    const res = await fetch('/api/chart/attendance_vs_mark');
+    const data = await res.json();
+    const ctx = document.getElementById('attendanceMarkChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Modules',
+                data: data.map(d => ({ x: d.avg_attendance, y: d.avg_mark, module: d.module_id })),
+                backgroundColor: 'rgba(59,130,246,0.7)'
+            }]
+        },
+        options: {
+            parsing: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `Module ${ctx.raw.module}: Attendance ${ctx.raw.x.toFixed(1)}, Mark ${ctx.raw.y?.toFixed(1) ?? 'N/A'}`
+                    }
+                }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Avg Attendance' }, suggestedMin: 0, suggestedMax: 1 },
+                y: { title: { display: true, text: 'Avg Mark' }, suggestedMin: 0, suggestedMax: 100 }
+            }
+        }
+    });
+}
+
+loadStressTrend();
+loadAttendanceMark();
+</script>
+{% endblock %}
+

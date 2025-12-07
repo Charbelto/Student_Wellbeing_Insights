@@ -19,7 +19,11 @@ class AnalyticsService:
         cursor.execute(q.GET_ATTENDANCE_RATE_FOR_STUDENT, (student_id,))
         att_row = cursor.fetchone()
         attendance_rate = att_row['attendance_rate'] if att_row and att_row['attendance_rate'] is not None else 0.0
+        attendance_pct = attendance_rate if attendance_rate is None else (attendance_rate * 100 if attendance_rate <= 1 else attendance_rate)
         
+        cursor.execute(q.GET_STUDENT_AND_NAME_BY_ID, (student_id,))
+        student_row = cursor.fetchone()
+
         cursor.execute(q.AVG_WELLBEING_STATS, (student_id,))
         wb_row = cursor.fetchone()
         avg_stress = wb_row['avg_stress'] if wb_row and wb_row['avg_stress'] is not None else 0.0
@@ -32,10 +36,17 @@ class AnalyticsService:
         return {
             "student_id": student_id,
             "average_attendance_rate": attendance_rate,
-            "average_attendance_pct": attendance_rate * 100 if attendance_rate is not None else 0,
+            "average_attendance_pct": attendance_pct if attendance_pct is not None else 0,
             "average_stress_level": avg_stress,
             "average_hours_slept": avg_sleep,
-            "average_mood": avg_mood
+            "average_mood": avg_mood,
+            "degree_name": student_row["degree_name"] if student_row else None,
+            "year_of_study": student_row["year"] if student_row else None,
+            "go_home_frequency": student_row["go_home_frequency"] if student_row else None,
+            "extracurricular_per_week": student_row["extracurricular_per_week"] if student_row else None,
+            "avg_commute_time_min": student_row["avg_commute_time_min"] if student_row else None,
+            "avg_screen_time_hours": student_row["avg_screen_time_hours"] if student_row else None,
+            "commute_type": student_row["commute_type"] if student_row else None,
         }
 
     def get_student_wellbeing_history(self, student_id: str, limit: int = 30) -> Dict[str, List[Any]]:

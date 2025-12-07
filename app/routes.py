@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, current_app, jsonify, request, red
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from app.database.models import Role
+import app.database.queries as q
+from app.database.connection import get_db_connection
 import csv
 import io
 import matplotlib
@@ -10,6 +12,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 main_bp = Blueprint('main', __name__)
+
+
+def _build_page_numbers(page: int, total_pages: int, window: int = 2):
+    if total_pages <= 7:
+        return list(range(1, total_pages + 1))
+    pages = [1]
+    start = max(2, page - window)
+    end = min(total_pages - 1, page + window)
+    if start > 2:
+        pages.append("...")
+    pages.extend(range(start, end + 1))
+    if end < total_pages - 1:
+        pages.append("...")
+    pages.append(total_pages)
+    return pages
 
 @main_bp.route('/')
 @login_required
@@ -27,14 +44,41 @@ def officer_dashboard():
         flash("Access denied. Wellbeing Officer only.", "error")
         return redirect(url_for('main.index'))
         
-    at_risk_students = current_app.analytics_service.identify_at_risk_students()
-    return render_template('officer_dashboard.html', at_risk_students=at_risk_students)
+    all_risks = current_app.analytics_service.identify_at_risk_students()
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    total_risk = len(all_risks)
+    start = (page - 1) * per_page
+    end = start + per_page
+    at_risk_students = all_risks[start:end]
+    total_students = len(current_app.student_service.get_all_students())
+    feedback_summary = current_app.analytics_service.get_feedback_summary()
+    total_risk_pages = max(1, (total_risk + per_page - 1) // per_page)
+    risk_page_numbers = _build_page_numbers(page, total_risk_pages)
+    return render_template(
+        'officer_dashboard.html',
+        at_risk_students=at_risk_students,
+        total_risk=total_risk,
+        risk_page=page,
+        risk_total_pages=total_risk_pages,
+        risk_page_numbers=risk_page_numbers,
+        total_students=total_students,
+        feedback_summary=feedback_summary,
+    )
 
 @main_bp.route('/students')
 @login_required
 def students():
     all_students = current_app.student_service.get_all_students()
-    return render_template('students.html', students=all_students)
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    total = len(all_students)
+    start = (page - 1) * per_page
+    end = start + per_page
+    students_page = all_students[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('students.html', students=students_page, page=page, total_pages=total_pages, total_students=total, page_numbers=page_numbers)
 
 @main_bp.route('/students/add', methods=['POST'])
 @login_required
@@ -262,10 +306,17 @@ def export_students():
     
     si = io.StringIO()
     cw = csv.writer(si)
-    cw.writerow(['ID', 'University ID', 'Name', 'Email', 'Degree', 'Year', 'Medical Info', 'Disabilities'])
+    cw.writerow(['Student ID', 'Name', 'Degree', 'Year', 'Medical Info', 'Disabilities'])
     
     for s in students:
-        cw.writerow([s.id, getattr(s, 'university_id', ''), s.name, s.email, s.degree_name, getattr(s, 'year', ''), s.medical_info, s.disabilities])
+        cw.writerow([
+            s.student_id,
+            s.name,
+            s.degree_name,
+            getattr(s, 'year', ''),
+            s.medical_information,
+            s.disabilities
+        ])
         
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=students_export.csv"
@@ -368,13 +419,39 @@ def export_risk():
 
     risks = current_app.analytics_service.identify_at_risk_students()
     si = io.StringIO()
-    cw = csv.DictWriter(si, fieldnames=["student_id", "risk_reason"])
+    fieldnames = [
+        "student_id",
+        "name",
+        "risk_level",
+        "avg_stress",
+        "late_submissions",
+        "avg_mark",
+        "min_mark",
+        "max_mark",
+        "risk_reasons",
+    ]
+    cw = csv.DictWriter(si, fieldnames=fieldnames)
     cw.writeheader()
+
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
     for r in risks:
+        # Try to enrich with risk_indicator row (if present)
+        cur.execute(q.GET_RISK, (r["student_id"],))
+        row = cur.fetchone()
         cw.writerow({
-            "student_id": r["student_id"],
-            "risk_reason": "; ".join(r.get("reasons", []))
+            "student_id": r.get("student_id"),
+            "name": r.get("name"),
+            "risk_level": r.get("risk_level") or (row["risk_level"] if row else None),
+            "avg_stress": r.get("average_stress") if r.get("average_stress") is not None else (row["avg_stress"] if row else None),
+            "late_submissions": r.get("late_submissions") if r.get("late_submissions") is not None else (row["late_submissions"] if row else None),
+            "avg_mark": row["avg_mark"] if row else None,
+            "min_mark": row["min_mark"] if row else None,
+            "max_mark": row["max_mark"] if row else None,
+            "risk_reasons": "; ".join(r.get("reasons", [])),
         })
+    conn.close()
+
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=risk_export.csv"
     output.headers["Content-type"] = "text/csv"
@@ -410,6 +487,205 @@ def api_students():
         })
     return jsonify(payload)
 
+
+# --- GLOBAL LISTING ROUTES ---
+
+@main_bp.route('/modules')
+@login_required
+def modules():
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM modules ORDER BY module_id ASC")
+    rows = cur.fetchall()
+    conn.close()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    total = len(rows)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = rows[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('modules.html', modules=page_rows, page=page, total_pages=total_pages, page_numbers=page_numbers, total_modules=total)
+
+
+@main_bp.route('/submissions/all')
+@login_required
+def submissions_all():
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.*, sn.name 
+        FROM submissions s
+        LEFT JOIN student_names sn ON s.student_id = sn.student_id
+        ORDER BY submitted_datetime DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    total = len(rows)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = rows[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('submissions_all.html', submissions=page_rows, page=page, total_pages=total_pages, page_numbers=page_numbers, total_submissions=total)
+
+
+@main_bp.route('/attendance/all')
+@login_required
+def attendance_all():
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT a.*, sn.name 
+        FROM attendance a
+        LEFT JOIN student_names sn ON a.student_id = sn.student_id
+        ORDER BY a.student_id, a.module_id
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    page = request.args.get('page', 1, type=int)
+    per_page = 25
+    total = len(rows)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = rows[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('attendance_all.html', records=page_rows, page=page, total_pages=total_pages, page_numbers=page_numbers, total_records=total)
+
+
+@main_bp.route('/feedback/all')
+@login_required
+def feedback_all():
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT f.*, sn.name 
+        FROM module_feedback f
+        LEFT JOIN student_names sn ON f.student_id = sn.student_id
+        ORDER BY f.module_id
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    total = len(rows)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = rows[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('feedback_all.html', feedback=page_rows, page=page, total_pages=total_pages, page_numbers=page_numbers, total_feedback=total)
+
+
+@main_bp.route('/risk/all')
+@login_required
+def risk_all():
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT r.*, sn.name 
+        FROM risk_indicator r
+        LEFT JOIN student_names sn ON r.student_id = sn.student_id
+        ORDER BY r.risk_level DESC, r.avg_stress DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    total = len(rows)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = rows[start:end]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page_numbers = _build_page_numbers(page, total_pages)
+    return render_template('risk_all.html', risks=page_rows, page=page, total_pages=total_pages, page_numbers=page_numbers, total_risks=total)
+
+
+@main_bp.route('/analytics')
+@login_required
+def analytics():
+    # Simple view; charts fetch data via existing APIs
+    summary = current_app.analytics_service.get_feedback_summary()
+    return render_template('analytics.html', feedback_summary=summary)
+
+
+# --- USER MANAGEMENT (OFFICER ONLY) ---
+
+@main_bp.route('/users')
+@login_required
+def users():
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users ORDER BY role, username")
+    rows = cur.fetchall()
+    conn.close()
+    return render_template('users.html', users=rows)
+
+
+@main_bp.route('/users/add', methods=['POST'])
+@login_required
+def add_user():
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    username = request.form.get('username')
+    password = request.form.get('password')
+    role_val = request.form.get('role')
+    if not username or not password or not role_val:
+        flash("Missing user fields", "error")
+        return redirect(url_for('main.users'))
+    try:
+        role = Role(role_val)
+    except Exception:
+        flash("Invalid role", "error")
+        return redirect(url_for('main.users'))
+    current_app.user_service.create_user(username, password, role)
+    flash("User created", "success")
+    return redirect(url_for('main.users'))
+
+
+@main_bp.route('/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    # Basic delete
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    flash("User deleted", "success")
+    return redirect(url_for('main.users'))
+
+
+@main_bp.route('/users/update/<int:user_id>', methods=['POST'])
+@login_required
+def update_user(user_id):
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    password = request.form.get('password') or None
+    role_val = request.form.get('role') or None
+    role = None
+    if role_val:
+        try:
+            role = Role(role_val)
+        except Exception:
+            flash("Invalid role", "error")
+            return redirect(url_for('main.users'))
+    updated = current_app.user_service.update_user(user_id, role=role, password=password)
+    if updated:
+        flash("User updated", "success")
+    else:
+        flash("User not found", "error")
+    return redirect(url_for('main.users'))
 @main_bp.route('/students/delete/<int:student_id>', methods=['POST'])
 @login_required
 def delete_student(student_id):

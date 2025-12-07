@@ -1,81 +1,107 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-6">
-    <a href="/students" class="text-blue-600 hover:underline">&larr; Back to Students</a>
-</div>
-
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Assignment Submissions</h1>
-        <div class="text-xl text-gray-600">{{ student.name }} (ID: {{ student.id }})</div>
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm font-semibold text-blue-600 uppercase tracking-wide">&larr; <a href="/students" class="hover:underline">Back to Students</a></p>
+            <h1 class="text-3xl font-bold text-slate-900">Assignment Submissions</h1>
+            <p class="text-sm text-slate-600">Student: {{ student.student_id }}</p>
+        </div>
     </div>
 
     <!-- Add Submission Form -->
-    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 class="text-xl font-semibold mb-4">Record New Submission</h2>
-        <form action="/submissions/add" method="POST" class="flex gap-4 flex-wrap">
-            <input type="hidden" name="student_id" value="{{ student.id }}">
+    <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Record New Submission</h2>
+            <p class="text-xs text-slate-500">Grades and lateness feed risk indicators.</p>
+        </div>
+        <form action="/submissions/add" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="hidden" name="student_id" value="{{ student.student_id }}">
             
-            <div class="flex-1 min-w-[200px]">
-                <label class="block text-gray-700 text-sm mb-1">Assignment ID</label>
-                <input type="text" name="assignment_id" placeholder="e.g. A1" required
-                       class="w-full border p-2 rounded">
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Module ID</label>
+                <input type="number" name="module_id" placeholder="e.g. 1" required
+                       class="w-full border border-slate-200 p-3 rounded-lg" min="1">
             </div>
-            
-            <div class="flex-1 min-w-[200px]">
-                <label class="block text-gray-700 text-sm mb-1">Submission Date</label>
-                <input type="datetime-local" name="submission_date" required
-                       class="w-full border p-2 rounded">
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Semester</label>
+                <input type="number" name="semester" value="1" min="1" class="w-full border border-slate-200 p-3 rounded-lg">
             </div>
-            
-            <div class="flex items-end">
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                    Submit
-                </button>
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Deadline</label>
+                <input type="datetime-local" name="deadline_datetime" required class="w-full border border-slate-200 p-3 rounded-lg">
             </div>
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Submitted</label>
+                <input type="datetime-local" name="submitted_datetime" required class="w-full border border-slate-200 p-3 rounded-lg">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Early/Late Count</label>
+                <input type="number" name="early_late_submissions" value="0" class="w-full border border-slate-200 p-3 rounded-lg">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Mark (optional)</label>
+                <input type="number" step="0.1" name="mark" class="w-full border border-slate-200 p-3 rounded-lg">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm mb-1">Late?</label>
+                <select name="late" class="w-full border border-slate-200 p-3 rounded-lg">
+                    <option value="False">On Time</option>
+                    <option value="True">Late</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 md:col-span-3 shadow">
+                Submit
+            </button>
         </form>
     </div>
 
     <!-- Submission List -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <table class="min-w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for sub in submissions %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ sub.submission_date }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ sub.assignment_id }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        {% if sub.grade is not none %}
-                            <span class="font-bold text-blue-600">{{ sub.grade }}</span>
-                        {% else %}
-                            <form action="/submissions/grade/{{ sub.id }}?student_id={{ student.id }}" method="POST" class="flex items-center gap-2">
-                                <input type="number" name="grade" step="0.1" placeholder="0-100" class="w-20 border p-1 text-sm rounded">
-                                <button type="submit" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">Grade</button>
+    <div class="bg-white rounded-xl shadow border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Submission History</h3>
+            <span class="text-xs text-slate-500">Grade or delete as needed</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Submitted</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Module</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Mark</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100">
+                    {% for sub in submissions %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ sub.submitted_datetime }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium">Module {{ sub.module_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if sub.mark is not none %}
+                                <span class="font-bold text-blue-600">{{ sub.mark }}</span>
+                            {% else %}
+                                <form action="/submissions/grade/{{ sub.submission_id }}?student_id={{ student.student_id }}" method="POST" class="flex items-center gap-2">
+                                    <input type="number" name="grade" step="0.1" placeholder="0-100" class="w-24 border border-slate-200 p-2 text-sm rounded-lg">
+                                    <button type="submit" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded">Grade</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <form action="/submissions/delete/{{ sub.submission_id }}?student_id={{ student.student_id }}" method="POST" onsubmit="return confirm('Delete this submission?');">
+                                <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
                             </form>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <form action="/submissions/delete/{{ sub.id }}?student_id={{ student.id }}" method="POST" onsubmit="return confirm('Are you sure?');">
-                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No submissions found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No submissions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
