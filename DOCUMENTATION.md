@@ -72,7 +72,7 @@ python -m app.scripts.import_data
 This script will:
 1. Re-initialize the database (Warning: Drops existing tables).
 2. Create default users (see below).
-3. Import student data from `app/database/PAI dataset (final).xlsx`.
+3. Import student data from `app/database/PAI_dataset.xlsx`.
 
 ### Default Login Credentials
 After running the import script, you can log in with the following users:
