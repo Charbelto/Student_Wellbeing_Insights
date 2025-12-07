@@ -419,38 +419,13 @@ def export_risk():
 
     risks = current_app.analytics_service.identify_at_risk_students()
     si = io.StringIO()
-    fieldnames = [
-        "student_id",
-        "name",
-        "risk_level",
-        "avg_stress",
-        "late_submissions",
-        "avg_mark",
-        "min_mark",
-        "max_mark",
-        "risk_reasons",
-    ]
-    cw = csv.DictWriter(si, fieldnames=fieldnames)
+    cw = csv.DictWriter(si, fieldnames=["student_id", "risk_reason"])
     cw.writeheader()
-
-    conn = get_db_connection(current_app.student_service.db_name)
-    cur = conn.cursor()
     for r in risks:
-        # Try to enrich with risk_indicator row (if present)
-        cur.execute(q.GET_RISK, (r["student_id"],))
-        row = cur.fetchone()
         cw.writerow({
             "student_id": r.get("student_id"),
-            "name": r.get("name"),
-            "risk_level": r.get("risk_level") or (row["risk_level"] if row else None),
-            "avg_stress": r.get("average_stress") if r.get("average_stress") is not None else (row["avg_stress"] if row else None),
-            "late_submissions": r.get("late_submissions") if r.get("late_submissions") is not None else (row["late_submissions"] if row else None),
-            "avg_mark": row["avg_mark"] if row else None,
-            "min_mark": row["min_mark"] if row else None,
-            "max_mark": row["max_mark"] if row else None,
-            "risk_reasons": "; ".join(r.get("reasons", [])),
+            "risk_reason": "; ".join(r.get("reasons", [])),
         })
-    conn.close()
 
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=risk_export.csv"
