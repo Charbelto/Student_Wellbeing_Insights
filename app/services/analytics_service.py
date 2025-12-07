@@ -54,6 +54,36 @@ class AnalyticsService:
 
         }
 
+    def get_stress_trend(self) -> Dict[str, List[Any]]:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.STRESS_TREND_AVG)
+        rows = cursor.fetchall()
+        conn.close()
+        return {
+            "weeks": [row["week"] for row in rows],
+            "avg_stress": [row["avg_stress"] for row in rows],
+        }
+
+    def get_attendance_vs_mark(self) -> List[Dict[str, Any]]:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.ATTENDANCE_VS_MARKS)
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {"module_id": row["module_id"], "avg_attendance": row["avg_attendance"], "avg_mark": row["avg_mark"]}
+            for row in rows
+        ]
+
+    def get_feedback_summary(self) -> Dict[str, Any]:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.FEEDBACK_PACE_AVG)
+        row = cursor.fetchone()
+        conn.close()
+        return {"avg_pace_rating": row["avg_pace"] if row and row["avg_pace"] is not None else 0}
+
     def identify_at_risk_students(self) -> List[Dict[str, Any]]:
         """
         Identifies students at risk based on:

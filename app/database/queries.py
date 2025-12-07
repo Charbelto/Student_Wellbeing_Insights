@@ -473,6 +473,13 @@ GET_SURVEY_FOR_STUDENT = """
     ORDER BY week ASC;
 """
 
+# Average stress trend by week
+STRESS_TREND_AVG = """
+    SELECT week, AVG(stress_level) AS avg_stress
+    FROM survey
+    GROUP BY week
+    ORDER BY week ASC;
+"""
 # Ordered wellbeing history for charting
 GET_WELLBEING_FOR_STUDENT = """
     SELECT week, stress_level, hours_slept, mood_score
@@ -733,6 +740,12 @@ ATTENDANCE_VS_MARKS = """
     INNER JOIN attendance ON submissions.student_id = attendance.student_id
         AND submissions.module_id = attendance.module_id
     GROUP BY submissions.module_id;
+"""
+
+# Feedback pace average
+FEEDBACK_PACE_AVG = """
+    SELECT AVG(pace_rating) AS avg_pace
+    FROM module_feedback;
 """
 
 # High Stress vs High Mark

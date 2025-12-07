@@ -92,7 +92,7 @@ def add_student():
 
 # --- ATTENDANCE ROUTES ---
 
-@main_bp.route('/attendance/student_id>')
+@main_bp.route('/attendance/<student_id>')
 @login_required
 def attendance_list(student_id):
     student = current_app.student_service.get_student(student_id)
@@ -141,7 +141,7 @@ def delete_attendance(record_id):
 
 # --- SUBMISSION ROUTES ---
 
-@main_bp.route('/submissions/<int:student_id>')
+@main_bp.route('/submissions/<student_id>')
 @login_required
 def submission_list(student_id):
     student = current_app.student_service.get_student(student_id)
@@ -154,17 +154,31 @@ def submission_list(student_id):
 @main_bp.route('/submissions/add', methods=['POST'])
 @login_required
 def add_submission():
-    student_id = request.form.get('student_id', type=int)
-    assignment_id = request.form.get('assignment_id')
-    submission_date = request.form.get('submission_date')
-    submitted_d = datetime.fromisoformat(submission_date) if submission_date else datetime.now()
+    student_id = request.form.get('student_id')
+    module_id = request.form.get('module_id', type=int)
+    semester = request.form.get('semester', type=int)
+    deadline_dt = request.form.get('deadline_datetime')
+    submitted_dt = request.form.get('submitted_datetime')
+    early_late = request.form.get('early_late_submissions', type=int)
+    mark = request.form.get('mark', type=float)
+    late = request.form.get('late') in ['true', 'True', True]
 
-    if not assignment_id:
-        flash("Assignment ID is required", "error")
+    if not student_id or not module_id or not semester or not deadline_dt or not submitted_dt:
+        flash("Missing submission information.", "error")
         return redirect(url_for('main.submission_list', student_id=student_id))
 
     try:
-        current_app.submission_service.submit_assignment(student_id, assignment_id, submitted_d)
+        current_app.submission_service.submit_assignment(
+            submission_id=None,
+            student_id=student_id,
+            module_id=module_id,
+            semester=semester,
+            deadline_datetime=datetime.fromisoformat(deadline_dt),
+            submitted_datetime=datetime.fromisoformat(submitted_dt),
+            early_late_submissions=early_late or 0,
+            mark=mark,
+            late=late
+        )
     except Exception as e:
         flash(f"Error adding submission: {e}", "error")
 
@@ -253,6 +267,54 @@ def export_students():
     output.headers["Content-Disposition"] = "attachment; filename=students_export.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+@main_bp.route('/api/dashboard/summary')
+@login_required
+def api_dashboard_summary():
+    student_id = request.args.get('student_id')
+    if not student_id:
+        return jsonify({"error": "student_id required"}), 400
+    summary = current_app.analytics_service.get_student_wellbeing_summary(student_id)
+    if current_user.role != Role.WELLBEING_OFFICER:
+        summary["average_stress_level"] = None
+        summary["average_hours_slept"] = None
+    return jsonify(summary)
+
+@main_bp.route('/api/chart/stress_trend')
+@login_required
+def stress_trend():
+    data = current_app.analytics_service.get_stress_trend()
+    return jsonify(data)
+
+@main_bp.route('/api/chart/attendance_vs_mark')
+@login_required
+def attendance_vs_mark():
+    data = current_app.analytics_service.get_attendance_vs_mark()
+    return jsonify(data)
+
+@main_bp.route('/api/feedback/summary')
+@login_required
+def feedback_summary():
+    data = current_app.analytics_service.get_feedback_summary()
+    return jsonify(data)
+
+@main_bp.route('/api/import/submissions', methods=['POST'])
+@login_required
+def import_submissions():
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+    raw = request.data.decode() if request.data else request.form.get('csv', '')
+    if not raw:
+        return jsonify({"status": "error", "message": "No CSV provided"}), 400
+    reader = csv.DictReader(io.StringIO(raw))
+    row_num = 1
+    for row in reader:
+        row_num += 1
+        try:
+            float(row.get("mark", ""))
+        except ValueError:
+            return jsonify({"status": "error", "message": f"Error in Row {row_num}: Mark must be a number"}), 400
+    return jsonify({"status": "success", "rows_processed": row_num - 1})
 
 @main_bp.route('/export/risk')
 @login_required
