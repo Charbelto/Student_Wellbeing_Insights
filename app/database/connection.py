@@ -25,6 +25,8 @@ sqlite3.register_converter("TIMESTAMP", convert_datetime)
 def get_db_connection(db_name=DEFAULT_DB):
     conn = sqlite3.connect(db_name, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
+    # Enforce relational integrity across all connections
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db(db_name=DEFAULT_DB):

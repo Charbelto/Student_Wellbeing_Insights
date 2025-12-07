@@ -108,14 +108,14 @@ class StudentService:
         cursor = conn.cursor()
         
         try:
-            # Delete related records first (if no cascade)
-            cursor.execute(q.DELETE_STUDENT, (student_id,))
-            cursor.execute(q.DELETE_NAME, (student_id,))
+            # Delete child records first to satisfy FK constraints
             cursor.execute(q.DELETE_STUDENT_FEEDBACK, (student_id,))
             cursor.execute(q.DELETE_STUDENT_ATTENDANCE, (student_id,))
             cursor.execute(q.DELETE_STUDENT_SURVEY, (student_id,))
             cursor.execute(q.DELETE_STUDENT_SUBMISSIONS, (student_id,))
             cursor.execute(q.DELETE_RISK, (student_id,))
+            cursor.execute(q.DELETE_NAME, (student_id,))
+            cursor.execute(q.DELETE_STUDENT, (student_id,))
             conn.commit()
             conn.close()
             return True

@@ -4,7 +4,7 @@
 <div class="mb-6 flex justify-between items-center">
     <h1 class="text-3xl font-bold text-gray-800">
         {% if student %}
-            Dashboard for {{ student.name }}
+            Dashboard for {{ student.student_id }}
         {% else %}
             Dashboard
         {% endif %}
@@ -16,7 +16,7 @@
         <select onchange="window.location.href='/dashboard?student_id='+this.value" class="border p-2 rounded">
             {% for s in all_students %}
             <option value="{{ s.id }}" {% if student and s.id == student.id %}selected{% endif %}>
-                {{ s.name }}
+                {{ s.student_id }}
             </option>
             {% endfor %}
         </select>
@@ -160,7 +160,11 @@
         <h2 class="text-xl font-semibold mb-2">Stress Level</h2>
         <p class="text-gray-600">Average Stress (1-5)</p>
         <div class="text-4xl font-bold text-red-600 mt-2">
-            {{ "%.1f"|format(summary.average_stress_level) }}
+            {% if summary.average_stress_level is not none %}
+                {{ "%.1f"|format(summary.average_stress_level) }}
+            {% else %}
+                N/A
+            {% endif %}
         </div>
     </div>
 
@@ -169,7 +173,11 @@
         <h2 class="text-xl font-semibold mb-2">Sleep</h2>
         <p class="text-gray-600">Avg Hours Slept</p>
         <div class="text-4xl font-bold text-blue-600 mt-2">
-            {{ "%.1f"|format(summary.average_hours_slept) }}h
+            {% if summary.average_hours_slept is not none %}
+                {{ "%.1f"|format(summary.average_hours_slept) }}h
+            {% else %}
+                N/A
+            {% endif %}
         </div>
     </div>
 </div>
@@ -216,13 +224,13 @@
     // Prepare data from backend
     const historyData = {{ history|tojson }};
     
-    if (historyData && historyData.dates && historyData.dates.length > 0) {
+    if (historyData && historyData.week && historyData.week.length > 0) {
         // Stress Chart
         const stressCtx = document.getElementById('stressChart').getContext('2d');
         new Chart(stressCtx, {
             type: 'line',
             data: {
-                labels: historyData.dates,
+                labels: historyData.week,
                 datasets: [{
                     label: 'Stress Level',
                     data: historyData.stress_levels,
@@ -249,7 +257,7 @@
         new Chart(sleepCtx, {
             type: 'bar',
             data: {
-                labels: historyData.dates,
+                labels: historyData.week,
                 datasets: [{
                     label: 'Hours Slept',
                     data: historyData.hours_slept,

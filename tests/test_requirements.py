@@ -26,6 +26,10 @@ def seed_student_with_data(db_name: str, student_id: str = "S1", stress_levels=(
     """Seed a student with survey and submission data."""
     conn = get_db_connection(db_name)
     cur = conn.cursor()
+    # Ensure module exists for FK
+    cur.execute(
+        "INSERT OR IGNORE INTO modules(module_id, degree_id, code, name, semester, lecture_day, lecture_time) VALUES(1, 1, 'CS101', 'Intro CS', 1, 'Mon', '09:00')"
+    )
     cur.execute(
         """
         INSERT INTO students(student_id, degree_id, degree_name, year, age_band, domicile, medical_information, disabilities)

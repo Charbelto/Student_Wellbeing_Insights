@@ -23,6 +23,9 @@ def db_setup():
     conn = sqlite3.connect(db_name)
     with open('app/database/schema.sql', 'r') as f:
         conn.executescript(f.read())
+    # Seed a default degree to satisfy FK constraints used across tests
+    conn.execute("INSERT INTO degrees(degree_id, degree_name) VALUES(1, 'CS')")
+    conn.commit()
     conn.close()
     
     yield db_name

@@ -1,9 +1,13 @@
-from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash, abort, make_response
+from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash, abort, make_response, send_file
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from app.database.models import Role
 import csv
 import io
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 main_bp = Blueprint('main', __name__)
 
@@ -205,7 +209,7 @@ def delete_submission(submission_id):
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    student_id = request.args.get('student_id', type=int)
+    student_id = request.args.get('student_id')
     
     if not student_id:
         students = current_app.student_service.get_all_students()
@@ -222,7 +226,7 @@ def dashboard():
         summary['average_stress_level'] = None
         summary['average_hours_slept'] = None
         history = None
-        student.medical_info = "REDACTED"
+        student.medical_information = "REDACTED"
         student.disabilities = "REDACTED"
     else:
         history = current_app.analytics_service.get_student_wellbeing_history(student_id)
@@ -291,6 +295,46 @@ def stress_trend():
 def attendance_vs_mark():
     data = current_app.analytics_service.get_attendance_vs_mark()
     return jsonify(data)
+
+
+@main_bp.route('/visualizations/stress_trend.png')
+@login_required
+def stress_trend_png():
+    data = current_app.analytics_service.get_stress_trend()
+    fig, ax = plt.subplots()
+    ax.plot(data.get("weeks", []), data.get("avg_stress", []), marker='o', color='red')
+    ax.set_xlabel("Week")
+    ax.set_ylabel("Average Stress")
+    ax.set_title("Average Stress Levels Over Time")
+    ax.set_ylim(bottom=0)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    img = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(img, format='png')
+    plt.close(fig)
+    img.seek(0)
+    return send_file(img, mimetype='image/png')
+
+
+@main_bp.route('/visualizations/attendance_vs_mark.png')
+@login_required
+def attendance_vs_mark_png():
+    data = current_app.analytics_service.get_attendance_vs_mark()
+    fig, ax = plt.subplots()
+    if data:
+        x_vals = [row["avg_attendance"] for row in data]
+        y_vals = [row["avg_mark"] for row in data]
+        ax.scatter(x_vals, y_vals, c='blue', alpha=0.7)
+    ax.set_xlabel("Average Attendance")
+    ax.set_ylabel("Average Mark")
+    ax.set_title("Attendance vs Average Mark")
+    ax.grid(True, linestyle="--", alpha=0.4)
+    img = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(img, format='png')
+    plt.close(fig)
+    img.seek(0)
+    return send_file(img, mimetype='image/png')
 
 @main_bp.route('/api/feedback/summary')
 @login_required

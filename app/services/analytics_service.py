@@ -32,6 +32,7 @@ class AnalyticsService:
         return {
             "student_id": student_id,
             "average_attendance_rate": attendance_rate,
+            "average_attendance_pct": attendance_rate * 100 if attendance_rate is not None else 0,
             "average_stress_level": avg_stress,
             "average_hours_slept": avg_sleep,
             "average_mood": avg_mood
@@ -105,13 +106,16 @@ class AnalyticsService:
             
             is_risk = False
             reasons = []
+            risk_level = None
 
             # Risk table explicit flag
             cursor.execute(q.GET_RISK, (s_id,))
             risk_row = cursor.fetchone()
-            if risk_row and risk_row['risk_level'] == 'High':
-                is_risk = True
-                reasons.append("risk_level=High")
+            if risk_row:
+                risk_level = risk_row['risk_level']
+                if risk_level in ('High', 'Medium'):
+                    is_risk = True
+                    reasons.append(f"risk_level={risk_level}")
 
             # Average stress
             cursor.execute(q.AVG_STRESS_STAT, (s_id,))
@@ -119,14 +123,16 @@ class AnalyticsService:
             avg_stress = stress_data['avg_stress'] if stress_data and stress_data['avg_stress'] is not None else 0
             if avg_stress >= 4.0:
                 is_risk = True
+                risk_level = risk_level or 'High'
                 reasons.append(f"avg_stress {avg_stress:.1f} >= 4.0")
 
             # Late submissions
             cursor.execute(q.LATE_SUBMISSION_COUNT, (s_id,))
             late_data = cursor.fetchone()
-            late_count = late_data['late_submissions'] if late_data else 0
+            late_count = late_data['late_submissions'] if late_data and late_data['late_submissions'] is not None else 0
             if late_count > 2:
                 is_risk = True
+                risk_level = risk_level or 'High'
                 reasons.append(f"late submissions {late_count} > 2")
 
             if is_risk:
@@ -135,6 +141,7 @@ class AnalyticsService:
                     "name": s['name'],
                     "average_stress": avg_stress,
                     "late_submissions": late_count,
+                    "risk_level": risk_level or 'High',
                     "reasons": reasons
                 })
                 
