@@ -18,7 +18,6 @@ Contents
 Quick Start
 -----------
 ```bash
-cd "C:\Users\Charbel\Desktop\New folder (9)"
 pip install -r requirements.txt
 python -m app.main
 # open http://127.0.0.1:5000
@@ -95,7 +94,6 @@ Architecture & Key Files
 Testing
 -------
 ```bash
-cd "C:\Users\Charbel\Desktop\New folder (9)"
 pytest -q
 ```
 
