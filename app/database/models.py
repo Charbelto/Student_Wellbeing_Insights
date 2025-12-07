@@ -25,12 +25,14 @@ class User(UserMixin, BaseModel):
     role: Role
 
 class Student(BaseModel):
+    name: Optional[str] = None
     student_id: str
-    degree_id: int
-    degree_name: str
-    year: int
-    age_band: str
-    domicile: str
+    id: Optional[str] = None
+    degree_id: Optional[int] = None
+    degree_name: Optional[str] = None
+    year: Optional[int] = None
+    age_band: Optional[str] = None
+    domicile: Optional[str] = None
     go_home_frequency: Optional[str] = None
     extracurricular_per_week: Optional[int] = None
     avg_commute_time_min: Optional[int] = None

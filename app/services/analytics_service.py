@@ -57,9 +57,9 @@ class AnalyticsService:
     def identify_at_risk_students(self) -> List[Dict[str, Any]]:
         """
         Identifies students at risk based on:
-        1. Attendance < 50%
-        2. High average stress (> 4.0)
-        3. Missing surveys (Logic: if no surveys in last 2 weeks, or never) - Simplified for prototype
+        - Explicit risk_level of "High" in risk_indicator table
+        - Average stress >= 4.0
+        - Late submissions > 2
         """
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
@@ -73,32 +73,38 @@ class AnalyticsService:
         for s in students:
             s_id = s['student_id']
             
-            # Check Attendance
-            cursor.execute(q.GET_ATTENDANCE_RATE_FOR_STUDENT, (s_id,))
-            att_data = cursor.fetchone()
-            
             is_risk = False
             reasons = []
-            
-            if att_data['total'] > 0:
-                absent_rate = 100 - att_data['attendance_rate']
-                if absent_rate > 0.3: # More than 30% absent
-                    is_risk = True
-                    reasons.append(f"High Absenteeism ({(absent_rate*100):.1f}%)")
-            
-            # Check Stress
+
+            # Risk table explicit flag
+            cursor.execute(q.GET_RISK, (s_id,))
+            risk_row = cursor.fetchone()
+            if risk_row and risk_row['risk_level'] == 'High':
+                is_risk = True
+                reasons.append("risk_level=High")
+
+            # Average stress
             cursor.execute(q.AVG_STRESS_STAT, (s_id,))
             stress_data = cursor.fetchone()
-            if stress_data['avg_stress'] and stress_data['avg_stress'] >= 4.0:
+            avg_stress = stress_data['avg_stress'] if stress_data and stress_data['avg_stress'] is not None else 0
+            if avg_stress >= 4.0:
                 is_risk = True
-                reasons.append(f"High Average Stress ({stress_data['avg_stress']:.1f})")
-                
+                reasons.append(f"avg_stress {avg_stress:.1f} >= 4.0")
+
+            # Late submissions
+            cursor.execute(q.LATE_SUBMISSION_COUNT, (s_id,))
+            late_data = cursor.fetchone()
+            late_count = late_data['late_submissions'] if late_data else 0
+            if late_count > 2:
+                is_risk = True
+                reasons.append(f"late submissions {late_count} > 2")
+
             if is_risk:
                 at_risk.append({
                     "student_id": s_id,
                     "name": s['name'],
-                    "absence rate": absent_rate,
-                    "average stress": stress_data['avg_stress'],
+                    "average_stress": avg_stress,
+                    "late_submissions": late_count,
                     "reasons": reasons
                 })
                 

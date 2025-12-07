@@ -386,7 +386,7 @@ GET_ATTENDANCE_FOR_STUDENT = """
 """
 
 GET_ATTENDANCE_RATE_FOR_STUDENT = """
-    SELECT attendance_rate
+    SELECT AVG(attendance_rate) AS attendance_rate
     FROM attendance
     WHERE student_id = ?;
 """
@@ -473,6 +473,14 @@ GET_SURVEY_FOR_STUDENT = """
     ORDER BY week ASC;
 """
 
+# Ordered wellbeing history for charting
+GET_WELLBEING_FOR_STUDENT = """
+    SELECT week, stress_level, hours_slept, mood_score
+    FROM survey
+    WHERE student_id = ?
+    ORDER BY week ASC;
+"""
+
 AVG_WELLBEING_STATS = """
     SELECT 
         AVG(stress_level) AS avg_stress,
@@ -484,9 +492,17 @@ AVG_WELLBEING_STATS = """
 
 AVG_STRESS_STAT = """
     SELECT 
-        AVG(stress_level) AS avg_stress,
+        AVG(stress_level) AS avg_stress
     FROM survey
     WHERE student_id = ?;
+"""
+
+# Late submissions count for risk detection
+LATE_SUBMISSION_COUNT = """
+    SELECT COUNT(*) AS late_submissions
+    FROM submissions
+    WHERE student_id = ?
+      AND late = 1;
 """
 
 # -------------- SUBMISSIONS --------------

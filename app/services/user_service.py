@@ -1,7 +1,7 @@
 from typing import Optional
 from app.database.models import User, Role
 from app.database.connection import get_db_connection
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
 import app.database.queries as q
 
 class UserService:
@@ -12,7 +12,8 @@ class UserService:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         
-        password_hash = generate_password_hash(password)
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
         
         cursor.execute(
             q.INSERT_USER,
@@ -33,7 +34,7 @@ class UserService:
         user = self.get_user_by_username(username)
         if not user:
             return False
-        return check_password_hash(user.password_hash, password)
+        return bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
 
     def get_user_by_username(self, username: str) -> Optional[User]:
         conn = get_db_connection(self.db_name)

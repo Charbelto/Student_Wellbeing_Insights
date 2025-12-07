@@ -10,11 +10,11 @@ class StudentService:
 
     def create_student(self, name: str,
                         student_id: str,
-                        degree_id: int,
-                        degree_name: str,
-                        year: int,
-                        age_band: str,
-                        domicile: str,
+                        degree_id: int = 1,
+                        degree_name: str = "General Studies",
+                        year: int = 1,
+                        age_band: str = "18-21",
+                        domicile: str = "UK",
                         go_home_frequency: str = None,
                         extracurricular_per_week: int = None,
                         avg_commute_time_min: int = None,
@@ -29,7 +29,7 @@ class StudentService:
             cursor.execute(q.GET_STUDENT_BY_ID, (student_id,))
             existing = cursor.fetchone()
             if existing:
-                return self.get_student(existing['id'])
+                return self.get_student(existing['student_id'])
 
             cursor.execute(q.INSERT_STUDENT, 
                            (student_id,
@@ -47,12 +47,14 @@ class StudentService:
                             disabilities))
             cursor.execute(q.INSERT_NAME, (student_id, name))
             conn.commit()
-            student_id = cursor.lastrowid
             conn.close()
             
             # Build object (simplified for return)
             return Student(
                 student_id=student_id, 
+                id=student_id,
+                name=name,
+                degree_id=degree_id,
                 degree_name=degree_name,
                 year=year,
                 domicile=domicile,
@@ -90,7 +92,9 @@ class StudentService:
         # Build object (simplified for return)
         return Student(
             student_id=row['student_id'],
+            id=row['student_id'],
             name = display_name,
+            degree_id=row['degree_id'],
             degree_name=row['degree_name'],
             year=row['year'],
             domicile=row['domicile'],

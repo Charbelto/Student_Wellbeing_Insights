@@ -8,7 +8,7 @@ class WellbeingService:
     def __init__(self, db_name='wellbeing.db'):
         self.db_name = db_name
 
-    def submit_survey(self, student_id: str, week: int, stress_level: int, hours_slept: int, mood_score: int,) -> Survey:
+    def submit_survey(self, student_id: str, week: int = 1, stress_level: int = 1, hours_slept: int = 0, mood_score: int = 0,) -> Survey:
         # Basic validation – adjust ranges if you have explicit rules
         if not (1 <= stress_level <= 5):
             raise ValueError(f"Invalid stress level: {stress_level}. Must be between 1 and 5.")

@@ -225,9 +225,10 @@ def submit_survey():
     try:
         current_app.wellbeing_service.submit_survey(
             student_id=data['student_id'],
+            week=data.get('week', 1),
             stress_level=data['stress_level'],
             hours_slept=data['hours_slept'],
-            comments=data.get('comments')
+            mood_score=data.get('mood_score', 0)
         )
         return jsonify({"status": "success"}), 201
     except Exception as e:
@@ -252,6 +253,56 @@ def export_students():
     output.headers["Content-Disposition"] = "attachment; filename=students_export.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+@main_bp.route('/export/risk')
+@login_required
+def export_risk():
+    if current_user.role != Role.WELLBEING_OFFICER:
+        abort(403)
+
+    risks = current_app.analytics_service.identify_at_risk_students()
+    si = io.StringIO()
+    cw = csv.DictWriter(si, fieldnames=["student_id", "risk_reason"])
+    cw.writeheader()
+    for r in risks:
+        cw.writerow({
+            "student_id": r["student_id"],
+            "risk_reason": "; ".join(r.get("reasons", []))
+        })
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=risk_export.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+@main_bp.route('/api/students')
+@login_required
+def api_students():
+    from app.database.connection import get_db_connection
+    conn = get_db_connection(current_app.student_service.db_name)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT student_names.name, students.student_id, students.degree_name, students.year,
+               students.medical_information, students.disabilities
+        FROM students
+        LEFT JOIN student_names ON students.student_id = student_names.student_id
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    role_val = getattr(current_user.role, "value", current_user.role)
+    is_officer = str(role_val).lower() == "wellbeing_officer"
+    payload = []
+    for r in rows:
+        med_info = r["medical_information"]
+        dis = r["disabilities"]
+        payload.append({
+            "student_id": r["student_id"],
+            "name": r["name"],
+            "degree_name": r["degree_name"],
+            "year": r["year"],
+            "medical_information": (med_info or "N/A") if is_officer else None,
+            "disabilities": (dis or "N/A") if is_officer else None,
+        })
+    return jsonify(payload)
 
 @main_bp.route('/students/delete/<int:student_id>', methods=['POST'])
 @login_required
