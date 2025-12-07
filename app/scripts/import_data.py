@@ -37,15 +37,19 @@ def import_students_from_excel(file_path: str, db_name='wellbeing.db'):
     for _, row in df.iterrows():
         try:
             service.create_student(
-                university_id=str(row['student_id']),
+                student_id=str(row['student_id']),
+                degree_id=int(row['degree_id']) if pd.notna(row['degree_id']) else None,
                 degree_name=str(row['degree_name']) if pd.notna(row['degree_name']) else None,
                 year=int(row['year']) if pd.notna(row['year']) else None,
+                age_band=str(row['age_band']) if pd.notna(row['age_band']) else None,
+                domicile=str(row['domicile']) if pd.notna(row['domicile']) else None,
+                go_home_frequency=str(row['go_home_frequency']) if pd.notna(row['go_home_frequency']) else None,
+                extracurricular_per_week=int(row['extracurricular_per_week']) if pd.notna(row['extracurricular_per_week']) else None,
+                avg_commute_time_min=int(row['avg_commute_time_min']) if pd.notna(row['avg_commute_time_min']) else None,
+                avg_screen_time_hours=int(row['avg_screen_time_hours']) if pd.notna(row['avg_screen_time_hours']) else None,
                 commute_type=str(row['commute_type']) if pd.notna(row['commute_type']) else None,
-                avg_commute_time_min=float(row['avg_commute_time_min']) if pd.notna(row['avg_commute_time_min']) else None,
-                avg_screen_time_hours=float(row['avg_screen_time_hours']) if pd.notna(row['avg_screen_time_hours']) else None,
-                medical_info=str(row['medical_information']) if pd.notna(row['medical_information']) else None,
+                medical_information=str(row['medical_information']) if pd.notna(row['medical_information']) else None,
                 disabilities=str(row['disabilities']) if pd.notna(row['disabilities']) else None,
-                email=f"{str(row['student_id'])}@university.ac.uk" # Mock email
             )
             count += 1
         except Exception as e:
@@ -59,4 +63,4 @@ if __name__ == "__main__":
     # So running this resets the DB.
     init_db()
     seed_users()
-    import_students_from_excel('app/database/PAI dataset (final).xlsx')
+    import_students_from_excel('app/database/PAI_dataset.xlsx')

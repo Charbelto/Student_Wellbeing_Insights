@@ -38,12 +38,52 @@ def add_student():
     if current_user.role != Role.WELLBEING_OFFICER:
         abort(403)
 
-    university_id = request.form.get('university_id') or request.form.get('name')
+    # Extract required fields
     name = request.form.get('name')
-    email = request.form.get('email')
+    student_id = request.form.get('student_id')
+    degree_id = request.form.get('degree_id')
+    degree_name = request.form.get('degree_name')
+    year = request.form.get('year')
+    age_band = request.form.get('age_band')
+    domicile = request.form.get('domicile')
+
+    # Optional fields
+    go_home_frequency = request.form.get('go_home_frequency')
+    extracurricular_per_week = request.form.get('extracurricular_per_week')
+    avg_commute_time_min = request.form.get('avg_commute_time_min')
+    avg_screen_time_hours = request.form.get('avg_screen_time_hours')
+    commute_type = request.form.get('commute_type')
+    medical_information = request.form.get('medical_information')
+    disabilities = request.form.get('disabilities')
     
+    # Convert appropriate numeric fields
     try:
-        current_app.student_service.create_student(university_id, name, email)
+        degree_id = int(degree_id) if degree_id else None
+        year = int(year) if year else None
+        extracurricular_per_week = int(extracurricular_per_week) if extracurricular_per_week else None
+        avg_commute_time_min = int(avg_commute_time_min) if avg_commute_time_min else None
+        avg_screen_time_hours = int(avg_screen_time_hours) if avg_screen_time_hours else None
+    except ValueError:
+        flash("One or more numeric fields contain invalid values.", "error")
+        return redirect(url_for('main.students'))
+
+    try:
+        current_app.student_service.create_student(
+            name=name,
+            student_id=student_id,
+            degree_id=degree_id,
+            degree_name=degree_name,
+            year=year,
+            age_band=age_band,
+            domicile=domicile,
+            go_home_frequency=go_home_frequency,
+            extracurricular_per_week=extracurricular_per_week,
+            avg_commute_time_min=avg_commute_time_min,
+            avg_screen_time_hours=avg_screen_time_hours,
+            commute_type=commute_type,
+            medical_information=medical_information,
+            disabilities=disabilities
+        )
     except ValueError as e:
         flash(str(e), 'error')
         return redirect(url_for('main.students'))
@@ -52,7 +92,7 @@ def add_student():
 
 # --- ATTENDANCE ROUTES ---
 
-@main_bp.route('/attendance/<int:student_id>')
+@main_bp.route('/attendance/student_id>')
 @login_required
 def attendance_list(student_id):
     student = current_app.student_service.get_student(student_id)
@@ -65,17 +105,23 @@ def attendance_list(student_id):
 @main_bp.route('/attendance/add', methods=['POST'])
 @login_required
 def add_attendance():
-    student_id = request.form.get('student_id', type=int)
-    course_id = request.form.get('course_id')
-    status = request.form.get('status')
-    date_str = request.form.get('date')
-    
-    if date_str:
-        d = date.fromisoformat(date_str)
+    student_id = request.form.get('student_id')
+    module_id = request.form.get('module_id')
+    action = request.form.get('action')
+
+    if not student_id or not module_id or not action:
+        flash("Missing attendance information.", "error")
+        return redirect(url_for('main.students'))
+
+    # Route to correct attendance update function
+    if action == "present":
+        current_app.attendance_service.record_attendance(student_id, module_id)
+    elif action == "absent":
+        current_app.attendance_service.record_absence(student_id, module_id)
     else:
-        d = date.today()
-        
-    current_app.attendance_service.record_attendance(student_id, course_id, status, d)
+        flash("Invalid attendance action.", "error")
+        return redirect(url_for('main.attendance_list', student_id=student_id))
+
     return redirect(url_for('main.attendance_list', student_id=student_id))
 
 @main_bp.route('/attendance/update/<int:record_id>', methods=['POST'])

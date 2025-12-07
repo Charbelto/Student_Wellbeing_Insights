@@ -1,129 +1,120 @@
 from typing import List, Optional
-from datetime import date
-from app.database.models import Attendance
+from app.database.models import Student
 from app.database.connection import get_db_connection
 import app.database.queries as q
+import sqlite3
 
-class AttendanceService:
+class StudentService:
     def __init__(self, db_name='wellbeing.db'):
         self.db_name = db_name
 
-    def record_attendance(self, student_id: str, module_id: str) -> Attendance:
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-
-        cursor.execute(q.UPDATE_ATTENDANCE_PRESENT, (student_id, module_id))
-        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
-        row = cursor.fetchone()
-
-        conn.commit()
-        conn.close()
-        
-        return Attendance(
-            student_id=row["student_id"],
-            module_id=row["module_id"],
-            total_sessions=row["total_sessions"],
-            attended_sessions=row["attended_sessions"],
-            attendance_rate=row["attendance_rate"]
-        )
-    
-    def record_absence(self, student_id: str, module_id: str) -> Attendance:
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-
-        cursor.execute(q.UPDATE_ATTENDANCE_ABSENT, (student_id, module_id))
-        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
-        row = cursor.fetchone()
-
-        conn.commit()
-        conn.close()
-        
-        return Attendance(
-            student_id=row["student_id"],
-            module_id=row["module_id"],
-            total_sessions=row["total_sessions"],
-            attended_sessions=row["attended_sessions"],
-            attendance_rate=row["attendance_rate"]
-        )
-
-    def get_student_attendance(self, student_id: str) -> List[Attendance]:
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-
-        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT, (student_id,))
-        rows = cursor.fetchall()
-
-        conn.close()
-        
-        return [Attendance(
-            student_id=row["student_id"],
-            module_id=row["module_id"],
-            total_sessions=row["total_sessions"],
-            attended_sessions=row["attended_sessions"],
-            attendance_rate=row["attendance_rate"]
-        ) for row in rows]
-
-    def get_attendance_rate(self, student_id: str):
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-
-        cursor.execute(q.GET_ATTENDANCE_RATE_FOR_STUDENT, (student_id,))
-        row = cursor.fetchone()
-
-        conn.close()
-
-        if row is None:
-            return None   # student not found
-
-        return row["attendance_rate"]
-
-    def update_attendance(self, student_id: str, module_id: int, total_sessions: int, attended_sessions: int, attendance_rate: float) -> Attendance:
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-        
-        # Check existence
-        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            raise ValueError(
-                    f"Attendance record with student id {student_id} and module id {module_id} not found"
-            )
-            
-        cursor.execute(q.UPDATE_ATTENDANCE, (student_id, module_id, total_sessions, attended_sessions, attendance_rate))
-        conn.commit()
-        conn.close()
-        
-        # Fetch updated to return complete object
-        conn = get_db_connection(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
-        row = cursor.fetchone()
-        conn.close()
-        
-        return Attendance(
-            id=row['id'],
-            student_id=row['student_id'],
-            module_id=row['module_id'],
-            status=row['status'],
-            date=row['date']
-        )
-
-    def delete_attendance(self, student_id: str, module_id: int) -> bool:
+    def create_student(self, name: str,
+                        student_id: str,
+                        degree_id: int,
+                        degree_name: str,
+                        year: int,
+                        age_band: str,
+                        domicile: str,
+                        go_home_frequency: str = None,
+                        extracurricular_per_week: int = None,
+                        avg_commute_time_min: int = None,
+                        avg_screen_time_hours: int = None,
+                        commute_type: str = None,
+                        medical_information: str = None,
+                        disabilities: str = None) -> Student:
         conn = get_db_connection(self.db_name)
         cursor = conn.cursor()
         try:
-            cursor.execute(q.GET_ATTENDANCE_FOR_STUDENT_AND_MODULE, (student_id, module_id))
-            row = cursor.fetchone()
+            # Check if exists by university_id
+            cursor.execute(q.GET_STUDENT_BY_ID, (student_id,))
+            existing = cursor.fetchone()
+            if existing:
+                return self.get_student(existing['id'])
 
-            if row is None:
-                raise ValueError(
-                    f"Attendance record with student id {student_id} and module id {module_id} not found"
-                )
-
-            cursor.execute(q.DELETE_MODULE_STUDENT_ATTENDANCE, (student_id, module_id))
+            cursor.execute(q.INSERT_STUDENT, 
+                           (student_id,
+                            degree_id,
+                            degree_name,
+                            year,
+                            age_band,
+                            domicile,
+                            go_home_frequency,
+                            extracurricular_per_week,
+                            avg_commute_time_min,
+                            avg_screen_time_hours,
+                            commute_type,
+                            medical_information,
+                            disabilities))
+            cursor.execute(q.INSERT_NAME, (student_id, name))
             conn.commit()
-            return True
-
-        finally:
+            student_id = cursor.lastrowid
             conn.close()
+            
+            # Build object (simplified for return)
+            return Student(
+                student_id=student_id, 
+                degree_name=degree_name,
+                year=year,
+                domicile=domicile,
+                medical_information=medical_information,
+                disabilities=disabilities
+            )
+        except sqlite3.IntegrityError as e:
+            conn.close()
+            raise ValueError(f"Database error: {e}")
+
+    def get_student(self, student_id: str) -> Optional[Student]:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.GET_STUDENT_AND_NAME_BY_ID, (student_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return self._map_row_to_student(row)
+        return None
+
+    def get_all_students(self) -> List[Student]:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(q.GET_ALL_STUDENTS_AND_NAME)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [self._map_row_to_student(row) for row in rows]
+
+    def _map_row_to_student(self, row) -> Student:
+        # Handle potential missing name by using student_id
+        display_name = row['name'] if row['name'] else row['student_id']
+        
+        # Build object (simplified for return)
+        return Student(
+            student_id=row['student_id'],
+            name = display_name,
+            degree_name=row['degree_name'],
+            year=row['year'],
+            domicile=row['domicile'],
+            medical_information=row['medical_information'],
+            disabilities=row['disabilities']
+        )
+
+
+    def delete_student(self, student_id: str) -> bool:
+        conn = get_db_connection(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            # Delete related records first (if no cascade)
+            cursor.execute(q.DELETE_STUDENT, (student_id,))
+            cursor.execute(q.DELETE_NAME, (student_id,))
+            cursor.execute(q.DELETE_STUDENT_FEEDBACK, (student_id,))
+            cursor.execute(q.DELETE_STUDENT_ATTENDANCE, (student_id,))
+            cursor.execute(q.DELETE_STUDENT_SURVEY, (student_id,))
+            cursor.execute(q.DELETE_STUDENT_SUBMISSIONS, (student_id,))
+            cursor.execute(q.DELETE_RISK, (student_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            conn.close()
+            raise e
