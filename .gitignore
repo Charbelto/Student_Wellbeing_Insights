@@ -13,3 +13,13 @@ venv/
 *.db
 *.db-wal
 *.db-shm
+
+# Additional polish rules
+# Python standard gitignore
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+virtualenv/
+.vscode/
+.idea/
